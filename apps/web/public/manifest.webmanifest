@@ -1,0 +1,36 @@
+{
+  "name": "TEDU Pass",
+  "short_name": "TEDU Pass",
+  "description": "TED Üniversitesi doğrulanabilir dijital başarı pasaportu",
+  "start_url": "/student",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#C8102E",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "QR Tara",
+      "url": "/student/scan"
+    },
+    {
+      "name": "Cüzdanım",
+      "url": "/student"
+    }
+  ]
+}

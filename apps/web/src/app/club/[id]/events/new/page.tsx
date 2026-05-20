@@ -1,0 +1,77 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { DashboardShell } from "@/components/dashboard-shell";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { createEvent } from "@/lib/actions/events";
+
+export default function NewEventPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const f = new FormData(e.currentTarget);
+      const ev = await createEvent({
+        clubId: params.id,
+        title: String(f.get("title") ?? ""),
+        description: String(f.get("description") ?? "") || undefined,
+        date: new Date(String(f.get("date"))).toISOString(),
+        location: String(f.get("location") ?? "") || undefined
+      });
+      router.push(`/club/${params.id}/events/${ev.id}`);
+    } catch (err: any) {
+      setError(err?.message ?? "Hata");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <DashboardShell role="Kulüp Yöneticisi" title="Yeni etkinlik">
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>Etkinlik bilgileri</CardTitle>
+          <CardDescription>Oluşturulan etkinlik için check-in QR'ı otomatik üretilir.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Başlık</Label>
+              <Input id="title" name="title" required minLength={3} placeholder="ETH Ankara 2026 — Açılış" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Açıklama</Label>
+              <Textarea id="description" name="description" rows={4} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="date">Tarih ve saat</Label>
+                <Input id="date" name="date" type="datetime-local" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Lokasyon</Label>
+                <Input id="location" name="location" placeholder="D Blok Konferans Salonu" />
+              </div>
+            </div>
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            <div className="flex gap-2">
+              <Button type="submit" disabled={busy}>
+                {busy ? "Oluşturuluyor..." : "Etkinlik oluştur"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => router.back()}>İptal</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </DashboardShell>
+  );
+}

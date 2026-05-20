@@ -1,0 +1,43 @@
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import * as dotenv from "dotenv";
+
+dotenv.config({ path: "../.env.local" });
+dotenv.config({ path: "../.env" });
+
+const PRIVATE_KEY = process.env.SERVER_WALLET_PRIVATE_KEY ?? "";
+const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL ?? "https://sepolia.base.org";
+const BASESCAN_KEY = process.env.BASESCAN_API_KEY ?? "";
+
+const config: HardhatUserConfig = {
+  solidity: {
+    version: "0.8.27",
+    settings: {
+      optimizer: { enabled: true, runs: 200 },
+      evmVersion: "cancun"
+    }
+  },
+  networks: {
+    hardhat: {},
+    baseSepolia: {
+      url: RPC_URL,
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      chainId: 84532
+    }
+  },
+  etherscan: {
+    apiKey: { baseSepolia: BASESCAN_KEY },
+    customChains: [
+      {
+        network: "baseSepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org"
+        }
+      }
+    ]
+  }
+};
+
+export default config;

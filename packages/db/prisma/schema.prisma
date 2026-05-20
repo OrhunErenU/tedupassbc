@@ -1,0 +1,141 @@
+// TEDU Pass — Prisma schema
+// Off-chain personal data lives here (KVKK). Only badge hashes go on-chain.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  CLUB_ADMIN
+  SKS_ADMIN
+}
+
+enum ClubMemberRole {
+  PRESIDENT
+  BOARD
+  MEMBER
+}
+
+enum EventStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum BadgeRole {
+  ATTENDEE
+  ORGANIZER
+  SPEAKER
+  MENTOR
+  VOLUNTEER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  teduEmail     String   @unique
+  name          String?
+  studentId     String?  @unique
+  walletAddress String?  @unique
+  role          UserRole @default(STUDENT)
+  isPublic      Boolean  @default(false)
+  username      String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  clubs       Club[]        @relation("ClubCreator")
+  memberships ClubMember[]
+  attendances Attendance[]
+  badges      Badge[]
+}
+
+model Club {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  description    String?
+  logoUrl        String?
+  approvedBySks  Boolean  @default(false)
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  createdBy User         @relation("ClubCreator", fields: [createdById], references: [id])
+  members   ClubMember[]
+  events    Event[]
+}
+
+model ClubMember {
+  userId String
+  clubId String
+  role   ClubMemberRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@id([userId, clubId])
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  clubId      String
+  title       String
+  description String?
+  date        DateTime
+  location    String?
+  qrSecret    String      @unique
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  club            Club             @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  badgeTemplates  BadgeTemplate[]
+  attendances     Attendance[]
+}
+
+model BadgeTemplate {
+  id          String    @id @default(cuid())
+  eventId     String
+  roleType    BadgeRole
+  name        String
+  imageUrl    String?
+  metadataUri String?
+
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  badges  Badge[]
+
+  @@unique([eventId, roleType])
+}
+
+model Attendance {
+  id           String    @id @default(cuid())
+  eventId      String
+  userId       String
+  checkedInAt  DateTime  @default(now())
+  role         BadgeRole @default(ATTENDEE)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model Badge {
+  id              String   @id @default(cuid())
+  badgeTemplateId String
+  userId          String
+  tokenId         String?  @unique
+  txHash          String?  @unique
+  mintedAt        DateTime?
+  createdAt       DateTime @default(now())
+
+  badgeTemplate BadgeTemplate @relation(fields: [badgeTemplateId], references: [id])
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([badgeTemplateId, userId])
+}
