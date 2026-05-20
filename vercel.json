@@ -1,8 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "pnpm --filter @tedu-pass/db prisma:generate && pnpm --filter @tedu-pass/web build",
+  "buildCommand": "pnpm --filter @tedu-pass/db prisma:generate && pnpm --filter @tedu-pass/db prisma:deploy && pnpm --filter @tedu-pass/web build",
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "outputDirectory": "apps/web/.next",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- apps/web packages/db contracts package.json pnpm-lock.yaml pnpm-workspace.yaml vercel.json"
+  "outputDirectory": "apps/web/.next"
 }
