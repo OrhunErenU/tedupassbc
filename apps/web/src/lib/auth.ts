@@ -17,7 +17,20 @@ export type SessionUser = {
  * Verifies the Privy access token from the request and returns the matching DB user.
  * Returns null if no valid session or no DB user yet.
  */
+const DEV_LOGIN = process.env.DEV_LOGIN === "1";
+
 export async function getSessionUser(): Promise<SessionUser | null> {
+  // Local demo / development impersonation. Strictly gated behind DEV_LOGIN=1,
+  // which must never be set in production. Lets the team demo seeded users
+  // without a live Privy email round-trip.
+  if (DEV_LOGIN) {
+    const devEmail = cookies().get("dev_user")?.value;
+    if (devEmail) {
+      const user = await prisma.user.findUnique({ where: { teduEmail: devEmail } });
+      if (user) return user;
+    }
+  }
+
   if (!privyServer) {
     const devEmail = cookies().get("dev_user")?.value;
     if (!devEmail) return null;

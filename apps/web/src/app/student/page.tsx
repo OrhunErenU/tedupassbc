@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/auth";
 import { safeQuery } from "@/lib/safe-db";
+import { BadgeArt } from "@/components/badge-art";
 import { Trophy, QrCode } from "lucide-react";
 
 export default async function StudentDashboardPage() {
@@ -69,18 +70,13 @@ export default async function StudentDashboardPage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {badges.map((b) => (
                 <Link key={b.id} href={`/verify/${b.id}`} className="group">
-                  <div className="aspect-square overflow-hidden rounded-xl bg-gradient-to-br from-tedu to-tedu-700 p-4 text-white shadow-sm transition group-hover:scale-[1.02]">
-                    <Trophy className="h-5 w-5 opacity-90" />
-                    <div className="mt-8 text-[10px] font-medium uppercase tracking-wider opacity-80">
-                      {b.badgeTemplate.roleType}
-                    </div>
-                    <div className="text-xs font-semibold leading-tight">
-                      {b.badgeTemplate.event.title}
-                    </div>
-                    <div className="mt-1 text-[10px] opacity-75">
-                      {b.badgeTemplate.event.club.name}
-                    </div>
-                  </div>
+                  <BadgeArt
+                    role={b.badgeTemplate.roleType}
+                    eventTitle={b.badgeTemplate.event.title}
+                    clubName={b.badgeTemplate.event.club.name}
+                    date={b.badgeTemplate.event.date.toLocaleDateString("tr-TR")}
+                    className="overflow-hidden rounded-xl shadow-sm transition group-hover:scale-[1.02]"
+                  />
                   <div className="mt-2 flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
                       {b.createdAt.toLocaleDateString("tr-TR")}

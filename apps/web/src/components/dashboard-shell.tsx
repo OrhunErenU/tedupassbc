@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const ALLOWED_DOMAIN = "tedu.edu.tr";
+const DEV_LOGIN = process.env.NEXT_PUBLIC_DEV_LOGIN === "1";
 
 function useOptionalPrivy() {
   try {
@@ -54,6 +55,7 @@ export function DashboardShell({
   const links = navByRole[role] ?? [];
 
   useEffect(() => {
+    if (DEV_LOGIN) return; // dev impersonation bypasses the Privy client guard
     if (!privyConfigured || !privy?.ready) return;
     if (!privy.authenticated) {
       router.replace(`/?from=${encodeURIComponent(pathname)}`);
@@ -82,7 +84,14 @@ export function DashboardShell({
                 {privy.user.email.address}
               </span>
             ) : null}
-            {privy?.authenticated ? (
+            {DEV_LOGIN ? (
+              <>
+                <Badge variant="warning" className="hidden sm:inline-flex">dev</Badge>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/dev">Kullanıcı değiştir</Link>
+                </Button>
+              </>
+            ) : privy?.authenticated ? (
               <Button variant="ghost" size="sm" onClick={() => privy.logout()}>
                 Çıkış
               </Button>

@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { Separator } from "@/components/ui/separator";
-import { ShieldCheck, ExternalLink, Trophy } from "lucide-react";
+import { BadgeArt, roleLabel } from "@/components/badge-art";
+import { ShieldCheck, ExternalLink } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -40,17 +41,14 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
 
         <Card className="mt-6 overflow-hidden">
           <div className="grid gap-0 md:grid-cols-[1fr_1.4fr]">
-            <div className="relative flex items-center justify-center bg-gradient-to-br from-tedu via-tedu-600 to-tedu-700 p-10 text-white">
-              <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "16px 16px" }} />
-              <div className="relative aspect-square w-48 rounded-2xl bg-white/10 p-5 backdrop-blur">
-                <Trophy className="h-7 w-7" />
-                <div className="mt-12 text-[10px] font-medium uppercase tracking-wider opacity-80">
-                  {badge.badgeTemplate.roleType}
-                </div>
-                <div className="text-sm font-semibold leading-tight">
-                  {badge.badgeTemplate.event.title}
-                </div>
-              </div>
+            <div className="flex items-center justify-center bg-muted/40 p-8">
+              <BadgeArt
+                role={badge.badgeTemplate.roleType}
+                eventTitle={badge.badgeTemplate.event.title}
+                clubName={badge.badgeTemplate.event.club.name}
+                date={badge.badgeTemplate.event.date.toLocaleDateString("tr-TR")}
+                className="w-56 rounded-2xl shadow-lg"
+              />
             </div>
             <div>
               <CardHeader>
@@ -65,7 +63,7 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
               </CardHeader>
               <CardContent className="space-y-4">
                 <Row label="Sahip" value={holderName} />
-                <Row label="Rol" value={badge.badgeTemplate.roleType} />
+                <Row label="Rol" value={roleLabel(badge.badgeTemplate.roleType)} />
                 <Row
                   label="Etkinlik tarihi"
                   value={badge.badgeTemplate.event.date.toLocaleDateString("tr-TR")}

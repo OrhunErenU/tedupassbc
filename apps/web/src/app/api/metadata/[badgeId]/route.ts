@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: { badgeId: st
   return NextResponse.json({
     name: badge.badgeTemplate.name,
     description: `${ev.club.name} — ${ev.title}`,
-    image: badge.badgeTemplate.imageUrl ?? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/badge-default.png`,
+    image: badge.badgeTemplate.imageUrl ?? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/badge-image/${badge.id}`,
     external_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/verify/${badge.id}`,
     attributes: [
       { trait_type: "Club", value: ev.club.name },

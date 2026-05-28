@@ -35,7 +35,8 @@ const config: Config = {
         ring: "hsl(var(--ring))"
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+        sans: ["var(--font-sans)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"]
       },
       borderRadius: {
         lg: "var(--radius)",
