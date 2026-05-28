@@ -11,7 +11,9 @@ const createEventSchema = z.object({
   title: z.string().min(3).max(120),
   description: z.string().max(2000).optional(),
   date: z.string().datetime(),
-  location: z.string().max(200).optional()
+  location: z.string().max(200).optional(),
+  // Optional custom badge design (data URL). Capped to keep the row small.
+  badgeImageUrl: z.string().max(800_000).optional()
 });
 
 export async function createEvent(input: z.infer<typeof createEventSchema>) {
@@ -32,6 +34,7 @@ export async function createEvent(input: z.infer<typeof createEventSchema>) {
       description: data.description,
       date: new Date(data.date),
       location: data.location,
+      badgeImageUrl: data.badgeImageUrl,
       qrSecret: randomBytes(16).toString("hex"),
       status: EventStatus.ACTIVE,
       badgeTemplates: {

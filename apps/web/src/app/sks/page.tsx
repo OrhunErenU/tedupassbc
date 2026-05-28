@@ -14,7 +14,7 @@ export default async function SksDashboardPage() {
       title="SKS Dashboard"
       description="TED Üniversitesi kulüp ekosisteminin canlı özeti."
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={<Building2 className="h-4 w-4" />} label="Aktif kulüp" value={s.totalClubs - s.pendingClubs} hint={`${s.pendingClubs} onay bekliyor`} />
         <Stat icon={<CalendarCheck className="h-4 w-4" />} label="Bu ay etkinlik" value={s.monthEvents} hint={`${s.activeEvents} aktif`} />
         <Stat icon={<Users className="h-4 w-4" />} label="Toplam katılım" value={s.totalAttendances} />
@@ -131,15 +131,13 @@ function Stat({
   hint?: string;
 }) {
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {icon}
-          {label}
-        </div>
-        <p className="mt-2 text-3xl font-semibold tracking-tight">{value}</p>
-        {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
-      </CardContent>
-    </Card>
+    <div className="bg-card p-5">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <span className="text-muted-foreground/70">{icon}</span>
+        <span className="eyebrow">{label}</span>
+      </div>
+      <p className="mt-2.5 text-3xl font-semibold tracking-tight">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+    </div>
   );
 }

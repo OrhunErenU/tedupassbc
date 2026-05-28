@@ -16,6 +16,16 @@ export async function GET(_req: NextRequest, { params }: { params: { badgeId: st
   if (!badge) return NextResponse.json({ error: "not-found" }, { status: 404 });
 
   const ev = badge.badgeTemplate.event;
+
+  // Club-supplied custom design takes precedence over generated art.
+  const custom = badge.badgeTemplate.imageUrl ?? ev.badgeImageUrl;
+  const m = custom?.match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
+  if (m) {
+    return new NextResponse(Buffer.from(m[2], "base64"), {
+      headers: { "Content-Type": m[1], "Cache-Control": "public, max-age=31536000, immutable" }
+    });
+  }
+
   const svg = badgeSvg({
     role: badge.badgeTemplate.roleType,
     eventTitle: ev.title,

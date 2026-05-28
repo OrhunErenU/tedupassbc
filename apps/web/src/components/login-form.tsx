@@ -150,7 +150,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-sm">
+    <div className="w-full max-w-sm rounded-xl border border-border bg-card p-5">
       {stage === "email" ? (
         <form onSubmit={onSendCode} className="space-y-4">
           <div className="flex items-center gap-2 text-sm font-medium">

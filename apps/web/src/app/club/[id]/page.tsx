@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { safeQuery } from "@/lib/safe-db";
+import { MembershipReview } from "./membership-review";
+
+const ROLE_LABEL: Record<string, string> = { PRESIDENT: "Başkan", BOARD: "Yönetim Kurulu", MEMBER: "Üye" };
 
 export default async function ClubDetailPage({ params }: { params: { id: string } }) {
   const club = await safeQuery(
@@ -14,12 +17,18 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
         where: { id: params.id },
         include: {
           events: { orderBy: { date: "desc" }, take: 20, include: { _count: { select: { attendances: true } } } },
+          members: {
+            where: { status: "PENDING" },
+            include: { user: { select: { id: true, name: true, teduEmail: true } } }
+          },
           _count: { select: { members: true, events: true } }
         }
       }),
     null
   );
   if (!club) notFound();
+
+  const pending = club.members;
 
   return (
     <DashboardShell
@@ -40,6 +49,36 @@ export default async function ClubDetailPage({ params }: { params: { id: string 
           value={club.approvedBySks ? "Onaylı" : "Bekliyor"}
         />
       </div>
+
+      {pending.length > 0 ? (
+        <Card className="mt-8 border-tedu/30">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Üyelik talepleri</CardTitle>
+              <Badge variant="warning">{pending.length} bekliyor</Badge>
+            </div>
+            <CardDescription>
+              Öğrencilerin bu toplulukta üstlendiğini belirttiği roller. Onayladığında profillerinde
+              "doğrulandı" olarak görünür.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-border">
+              {pending.map((m) => (
+                <li key={m.userId} className="flex items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{m.user.name ?? m.user.teduEmail}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {ROLE_LABEL[m.role] ?? m.role}{m.title ? ` · ${m.title}` : ""} · {m.user.teduEmail}
+                    </div>
+                  </div>
+                  <MembershipReview clubId={club.id} userId={m.userId} />
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="mt-8">
         <CardHeader>

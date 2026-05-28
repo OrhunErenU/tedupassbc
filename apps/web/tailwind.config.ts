@@ -33,7 +33,24 @@ const config: Config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        console: { DEFAULT: "hsl(var(--console))", foreground: "hsl(var(--console-foreground))" }
+        console: { DEFAULT: "hsl(var(--console))", foreground: "hsl(var(--console-foreground))" },
+        // Soft tinted accent surfaces — bring warmth/color to cards & sections
+        // without promoting any of them to a CTA color (red stays the action color).
+        tint: {
+          rose: "#FCE9EC",
+          peach: "#FDEFE4",
+          butter: "#FBF3D9",
+          mint: "#E6F5EE",
+          sky: "#E7F1FB",
+          lavender: "#F1EAFB"
+        },
+        role: {
+          organizer: "#C8102E",
+          speaker: "#E08A1E",
+          mentor: "#7C3AED",
+          volunteer: "#0F9D6B",
+          attendee: "#2563EB"
+        }
       },
       fontFamily: {
         sans: ["var(--font-sans)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],

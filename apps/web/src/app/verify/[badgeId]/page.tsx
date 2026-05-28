@@ -4,7 +4,7 @@ import { prisma } from "@tedu-pass/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/logo";
+import { Logo, LogoMark } from "@/components/logo";
 import { BadgeArt, roleLabel } from "@/components/badge-art";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 
@@ -38,23 +38,28 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
           <Link href="/" className="inline-block">
             <Logo />
           </Link>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-            <ShieldCheck className="h-4 w-4" />
+          <Badge variant="verified">
+            <ShieldCheck className="h-3.5 w-3.5" />
             Doğrulanmış kayıt
-          </span>
+          </Badge>
         </div>
 
         {/* Credential card */}
         <Card className="mt-6 overflow-hidden shadow-none">
           <div className="grid gap-0 md:grid-cols-[0.85fr_1.15fr]">
-            <div className="flex items-center justify-center border-b border-border bg-secondary p-8 md:border-b-0 md:border-r">
+            <div className="flex flex-col items-center justify-center gap-5 border-b border-border bg-secondary p-8 md:border-b-0 md:border-r">
               <BadgeArt
                 role={badge.badgeTemplate.roleType}
                 eventTitle={ev.title}
                 clubName={ev.club.name}
                 date={ev.date.toLocaleDateString("tr-TR")}
+                imageUrl={badge.badgeTemplate.imageUrl ?? ev.badgeImageUrl}
                 className="w-52 rounded-2xl"
               />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <LogoMark className="h-7 w-7" />
+                <span>TED Üniversitesi öğrenci topluluğu kaydı</span>
+              </div>
             </div>
             <div>
               <CardHeader>

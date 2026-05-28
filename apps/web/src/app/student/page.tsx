@@ -42,7 +42,7 @@ export default async function StudentDashboardPage() {
         </Button>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3">
         <StatCard label="Toplam rozet" value={badges.length} />
         <StatCard label="Bu dönem" value={badges.filter((b) => b.createdAt > monthsAgo(6)).length} />
         <StatCard label="Cüzdan" value={user?.walletAddress ? short(user.walletAddress) : "—"} mono />
@@ -75,7 +75,8 @@ export default async function StudentDashboardPage() {
                     eventTitle={b.badgeTemplate.event.title}
                     clubName={b.badgeTemplate.event.club.name}
                     date={b.badgeTemplate.event.date.toLocaleDateString("tr-TR")}
-                    className="overflow-hidden rounded-xl shadow-sm transition group-hover:scale-[1.02]"
+                    imageUrl={b.badgeTemplate.imageUrl ?? b.badgeTemplate.event.badgeImageUrl}
+                    className="overflow-hidden rounded-xl ring-1 ring-border/60 transition group-hover:scale-[1.02] group-hover:ring-tedu/30"
                   />
                   <div className="mt-2 flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
@@ -99,14 +100,12 @@ export default async function StudentDashboardPage() {
 
 function StatCard({ label, value, mono = false }: { label: string; value: number | string; mono?: boolean }) {
   return (
-    <Card className="shadow-none">
-      <CardContent className="p-5">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className={`mt-1.5 font-semibold tracking-tight ${mono ? "font-mono text-xl" : "text-3xl"}`}>
-          {value}
-        </p>
-      </CardContent>
-    </Card>
+    <div className="bg-card p-5">
+      <p className="eyebrow">{label}</p>
+      <p className={`mt-1.5 font-semibold tracking-tight ${mono ? "font-mono text-xl" : "text-3xl"}`}>
+        {value}
+      </p>
+    </div>
   );
 }
 

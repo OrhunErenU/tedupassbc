@@ -2,8 +2,38 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma, ClubMemberRole, BadgeRole } from "@tedu-pass/db";
+import { prisma, ClubMemberRole, ClubMemberStatus, BadgeRole } from "@tedu-pass/db";
 import { requireSessionUser } from "@/lib/auth";
+
+async function requireClubManager(clubId: string, userId: string) {
+  const m = await prisma.clubMember.findUnique({
+    where: { userId_clubId: { userId, clubId } }
+  });
+  if (!m || m.status !== ClubMemberStatus.APPROVED || m.role === ClubMemberRole.MEMBER) {
+    throw new Error("Bu kulüpte yönetici değilsin.");
+  }
+  return m;
+}
+
+/** Club manager confirms a student's self-declared role → it becomes verified. */
+export async function approveMembership(targetUserId: string, clubId: string) {
+  const user = await requireSessionUser();
+  await requireClubManager(clubId, user.id);
+  await prisma.clubMember.update({
+    where: { userId_clubId: { userId: targetUserId, clubId } },
+    data: { status: ClubMemberStatus.APPROVED }
+  });
+  revalidatePath(`/club/${clubId}`);
+}
+
+export async function rejectMembership(targetUserId: string, clubId: string) {
+  const user = await requireSessionUser();
+  await requireClubManager(clubId, user.id);
+  await prisma.clubMember.delete({
+    where: { userId_clubId: { userId: targetUserId, clubId } }
+  });
+  revalidatePath(`/club/${clubId}`);
+}
 
 const createClubSchema = z.object({
   name: z.string().min(3).max(80),

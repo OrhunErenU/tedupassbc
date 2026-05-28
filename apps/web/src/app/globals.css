@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    /* Warm "ledger" canvas (Fingerprint data-sheet + N26 institutional white). */
-    --background: 48 33% 98%;
+    /* "Ledger" canvas — warm institutional paper, structure carried by hairlines. */
+    --background: 40 30% 98%;
     --foreground: 240 6% 9%;
 
     --card: 0 0% 100%;
@@ -14,51 +14,59 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 6% 9%;
 
-    --primary: 354 85% 42%;
+    /* TEDÜ red — the single chromatic accent. CTA + active state only. */
+    --primary: 350 85% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 48 14% 95%;
+    /* Alternating "paper" band for section rhythm. */
+    --secondary: 42 18% 95%;
     --secondary-foreground: 240 6% 9%;
 
-    --muted: 48 14% 95%;
-    --muted-foreground: 60 3% 45%;
+    --muted: 42 18% 95%;
+    --muted-foreground: 45 4% 42%;
 
-    --accent: 354 70% 96%;
-    --accent-foreground: 354 85% 32%;
+    --accent: 350 70% 96%;
+    --accent-foreground: 350 80% 32%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 46%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Thin ash borders, no heavy shadows (N26 relies on hairlines for structure). */
-    --border: 60 6% 89%;
-    --input: 60 6% 89%;
-    --ring: 354 85% 42%;
+    /* Thin ash borders — the primary structural device. */
+    --border: 42 10% 88%;
+    --input: 42 10% 88%;
+    --ring: 350 85% 42%;
 
-    /* Dark data-console used for on-chain records (Fingerprint code block). */
-    --console: 60 4% 14%;
-    --console-foreground: 60 6% 70%;
+    /* On-chain record console (the signature move). */
+    --console: 60 5% 12%;
+    --console-foreground: 48 8% 72%;
+    --console-border: 48 4% 24%;
+    --console-accent: 350 90% 68%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222 20% 7%;
+    --background: 240 8% 6%;
     --foreground: 0 0% 98%;
-    --card: 222 18% 9%;
+    --card: 240 7% 9%;
     --card-foreground: 0 0% 98%;
-    --popover: 222 18% 9%;
+    --popover: 240 7% 9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 354 85% 55%;
+    --primary: 350 85% 56%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 222 14% 14%;
+    --secondary: 240 5% 14%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 222 14% 14%;
-    --muted-foreground: 220 9% 65%;
-    --accent: 354 35% 18%;
-    --accent-foreground: 354 85% 85%;
-    --border: 222 14% 18%;
-    --input: 222 14% 18%;
-    --ring: 354 85% 55%;
+    --muted: 240 5% 14%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 350 40% 18%;
+    --accent-foreground: 350 85% 85%;
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 350 85% 56%;
+    --console: 240 8% 4%;
+    --console-foreground: 48 8% 70%;
+    --console-border: 240 6% 16%;
+    --console-accent: 350 90% 70%;
   }
 
   * {
@@ -69,16 +77,52 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "cv05" 1;
+    background-image:
+      radial-gradient(hsl(var(--foreground) / 0.022) 1px, transparent 1px);
+    background-size: 22px 22px;
   }
-  /* Hairline divider utility (N26 structure-through-borders). */
-  .rule {
-    @apply border-t border-border;
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
 }
 
 @layer components {
   .container-tight {
     @apply mx-auto w-full max-w-5xl px-4 sm:px-6;
+  }
+
+  /* Hairline divider used to separate ledger rows/sections. */
+  .rule {
+    @apply border-t border-border;
+  }
+
+  /* Uppercase tracked eyebrow label — section + metadata kicker. */
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  /* On-chain record strip: dark monospace console reserved for verifiable data. */
+  .onchain {
+    background-color: hsl(var(--console));
+    color: hsl(var(--console-foreground));
+    border: 1px solid hsl(var(--console-border));
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    border-radius: calc(var(--radius) - 0.25rem);
+  }
+  .onchain .k { color: hsl(var(--console-foreground) / 0.65); }
+  .onchain .v { color: #f4f1ea; }
+  .onchain .ok { color: #5fcf80; }
+  .onchain .hl { color: hsl(var(--console-accent)); }
+
+  /* Status dot. */
+  .dot {
+    @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full;
   }
 }

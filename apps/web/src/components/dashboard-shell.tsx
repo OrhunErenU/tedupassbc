@@ -19,10 +19,17 @@ function useOptionalPrivy() {
   }
 }
 
+// Panels that require a specific global role (dev guard). Only SKS is gated —
+// student/club panels enforce finer permissions (club membership) in their actions.
+const REQUIRED_ROLE: Record<string, string> = {
+  SKS: "SKS_ADMIN"
+};
+
 const navByRole: Record<string, { href: string; label: string }[]> = {
   Öğrenci: [
     { href: "/student", label: "Cüzdanım" },
     { href: "/student/scan", label: "QR Tara" },
+    { href: "/takvim", label: "Takvim" },
     { href: "/student/profile", label: "Profil" }
   ],
   "Kulüp Yöneticisi": [
@@ -55,7 +62,22 @@ export function DashboardShell({
   const links = navByRole[role] ?? [];
 
   useEffect(() => {
-    if (DEV_LOGIN) return; // dev impersonation bypasses the Privy client guard
+    if (DEV_LOGIN) {
+      // Dev impersonation: require a dev session AND the right role, else send to the
+      // login switcher so users don't land on a panel whose server action then 401/403s.
+      const cookies = document.cookie.split("; ");
+      const hasDevSession = cookies.some((c) => c.startsWith("dev_user_pub="));
+      if (!hasDevSession) {
+        router.replace(`/dev?redirect=${encodeURIComponent(pathname)}`);
+        return;
+      }
+      const devRole = cookies.find((c) => c.startsWith("dev_role="))?.split("=")[1];
+      const required = REQUIRED_ROLE[role];
+      if (required && devRole && devRole !== required) {
+        router.replace(`/dev?redirect=${encodeURIComponent(pathname)}`);
+      }
+      return;
+    }
     if (!privyConfigured || !privy?.ready) return;
     if (!privy.authenticated) {
       router.replace(`/?from=${encodeURIComponent(pathname)}`);

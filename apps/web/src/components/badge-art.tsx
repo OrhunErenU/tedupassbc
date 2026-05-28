@@ -36,16 +36,32 @@ export function BadgeArt({
   eventTitle,
   clubName,
   date,
+  imageUrl,
   className
 }: {
   role: string;
   eventTitle: string;
   clubName?: string;
   date?: string;
+  imageUrl?: string | null;
   className?: string;
 }) {
   const theme = ROLE_THEME[(role as BadgeRoleKey)] ?? ROLE_THEME.ATTENDEE;
   const uid = `${role}-${eventTitle}`.replace(/[^a-z0-9]/gi, "").slice(0, 24);
+
+  // Club-supplied custom design: show the artwork with a role tag overlay.
+  if (imageUrl) {
+    return (
+      <div className={cn("relative aspect-square w-full overflow-hidden", className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl} alt={`${roleLabel(role)} — ${eventTitle}`} className="h-full w-full object-cover" />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2.5">
+          <div className="text-[9px] font-semibold uppercase tracking-wider text-white/85">{roleLabel(role)}</div>
+          <div className="truncate text-xs font-semibold leading-tight text-white">{eventTitle}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("aspect-square w-full", className)}>

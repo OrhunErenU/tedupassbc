@@ -17,17 +17,18 @@ export async function GET(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { teduEmail: email } });
   if (!user) return NextResponse.json({ error: "no-such-user" }, { status: 404 });
 
-  cookies().set("dev_user", email, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7
-  });
+  const opts = { sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 7 };
+  cookies().set("dev_user", email, { ...opts, httpOnly: true });
+  // Non-httpOnly companions so the client shell can detect dev-login state + role.
+  cookies().set("dev_user_pub", email, { ...opts, httpOnly: false });
+  cookies().set("dev_role", user.role, { ...opts, httpOnly: false });
 
   return NextResponse.redirect(new URL(redirect, req.nextUrl.origin));
 }
 
 export async function DELETE() {
   cookies().delete("dev_user");
+  cookies().delete("dev_user_pub");
+  cookies().delete("dev_role");
   return NextResponse.json({ ok: true });
 }

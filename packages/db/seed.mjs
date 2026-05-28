@@ -91,6 +91,32 @@ async function main() {
     clubs.push(club);
   }
 
+  // --- Profiles (CV headline/bio) ---------------------------------------
+  await prisma.user.update({
+    where: { id: students[0].id },
+    data: { title: "Bilgisayar Mühendisliği '26 · Blockchain Topluluğu", bio: "Web3 ve akıllı kontratlara ilgili; hackathon organizasyonlarında aktif." }
+  });
+  await prisma.user.update({
+    where: { id: students[1].id },
+    data: { title: "Endüstri Mühendisliği '25", bio: "Girişimcilik ve ürün yönetimi alanlarında çalışıyorum." }
+  });
+
+  // --- Memberships (verified roles + one pending claim) -----------------
+  const memberSpecs = [
+    [students[0], clubs[0], "BOARD", "Etkinlik Koordinatörü", "APPROVED"],
+    [students[1], clubs[2], "MEMBER", "Pazarlama Ekibi", "APPROVED"],
+    [students[4], clubs[1], "BOARD", "Yazılım Sorumlusu", "APPROVED"],
+    // Pending claim — shows up in the club panel's approval queue:
+    [students[2], clubs[0], "MEMBER", "Gönüllü", "PENDING"]
+  ];
+  for (const [u, club, role, title, status] of memberSpecs) {
+    await prisma.clubMember.upsert({
+      where: { userId_clubId: { userId: u.id, clubId: club.id } },
+      update: { role, title, status },
+      create: { userId: u.id, clubId: club.id, role, title, status }
+    });
+  }
+
   // --- Events ------------------------------------------------------------
   // [club, title, daysFromNow, status, location]
   const eventSpecs = [
@@ -106,9 +132,17 @@ async function main() {
   for (const [club, title, days, status, location] of eventSpecs) {
     const date = new Date();
     date.setDate(date.getDate() + days);
-    // Recreate event cleanly by title+club
-    const existing = await prisma.event.findFirst({ where: { clubId: club.id, title } });
-    if (existing) await prisma.event.delete({ where: { id: existing.id } });
+    // Recreate event cleanly by title+club (FK-safe: drop its badges first, since
+    // Badge -> BadgeTemplate is Restrict). Only touches this demo event.
+    const existing = await prisma.event.findFirst({
+      where: { clubId: club.id, title },
+      include: { badgeTemplates: { select: { id: true } } }
+    });
+    if (existing) {
+      const tplIds = existing.badgeTemplates.map((t) => t.id);
+      if (tplIds.length) await prisma.badge.deleteMany({ where: { badgeTemplateId: { in: tplIds } } });
+      await prisma.event.delete({ where: { id: existing.id } });
+    }
     const ev = await prisma.event.create({
       data: {
         clubId: club.id,
@@ -151,17 +185,14 @@ async function main() {
           ev.badgeTemplates.find((t) => t.roleType === role) ??
           ev.badgeTemplates.find((t) => t.roleType === "ATTENDEE");
         if (template) {
+          // No fabricated on-chain fields — badges are honestly "queued" until a
+          // real mint runs (contract deployed + gas). Nothing mock here.
           await prisma.badge.upsert({
             where: { badgeTemplateId_userId: { badgeTemplateId: template.id, userId: u.id } },
             update: {},
-            create: {
-              badgeTemplateId: template.id,
-              userId: u.id,
-              mintedAt: new Date(),
-              tokenId: String(++badgeCount),
-              txHash: randomHex(32)
-            }
+            create: { badgeTemplateId: template.id, userId: u.id }
           });
+          badgeCount++;
         }
       }
     }
