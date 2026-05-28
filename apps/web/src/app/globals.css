@@ -4,35 +4,41 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 14% 10%;
+    /* Warm "ledger" canvas (Fingerprint data-sheet + N26 institutional white). */
+    --background: 48 33% 98%;
+    --foreground: 240 6% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 14% 10%;
+    --card-foreground: 240 6% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 14% 10%;
+    --popover-foreground: 240 6% 9%;
 
     --primary: 354 85% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 222 14% 10%;
+    --secondary: 48 14% 95%;
+    --secondary-foreground: 240 6% 9%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 48 14% 95%;
+    --muted-foreground: 60 3% 45%;
 
-    --accent: 354 85% 96%;
+    --accent: 354 70% 96%;
     --accent-foreground: 354 85% 32%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    /* Thin ash borders, no heavy shadows (N26 relies on hairlines for structure). */
+    --border: 60 6% 89%;
+    --input: 60 6% 89%;
     --ring: 354 85% 42%;
 
-    --radius: 0.625rem;
+    /* Dark data-console used for on-chain records (Fingerprint code block). */
+    --console: 60 4% 14%;
+    --console-foreground: 60 6% 70%;
+
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -63,10 +69,11 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    background-image:
-      radial-gradient(60rem 30rem at 10% -10%, hsl(354 85% 42% / 0.06), transparent),
-      radial-gradient(40rem 20rem at 100% 0%, hsl(354 85% 42% / 0.04), transparent);
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  }
+  /* Hairline divider utility (N26 structure-through-borders). */
+  .rule {
+    @apply border-t border-border;
   }
 }
 

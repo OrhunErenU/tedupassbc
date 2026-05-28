@@ -32,7 +32,8 @@ const config: Config = {
         destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))"
+        ring: "hsl(var(--ring))",
+        console: { DEFAULT: "hsl(var(--console))", foreground: "hsl(var(--console-foreground))" }
       },
       fontFamily: {
         sans: ["var(--font-sans)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],

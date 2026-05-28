@@ -91,8 +91,7 @@ export default function HomePage() {
           </div>
 
           {/* Hero showcase: a sample badge wallet */}
-          <Card className="relative overflow-hidden border-tedu/20 shadow-xl shadow-tedu/5">
-            <div className="absolute inset-x-0 -top-32 h-64 bg-gradient-to-br from-tedu/15 via-tedu/0 to-tedu/0 blur-2xl" />
+          <Card className="relative overflow-hidden border-border shadow-none">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Cüzdanım</CardTitle>

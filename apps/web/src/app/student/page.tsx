@@ -45,7 +45,7 @@ export default async function StudentDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Toplam rozet" value={badges.length} />
         <StatCard label="Bu dönem" value={badges.filter((b) => b.createdAt > monthsAgo(6)).length} />
-        <StatCard label="Cüzdan" value={user?.walletAddress ? short(user.walletAddress) : "—"} />
+        <StatCard label="Cüzdan" value={user?.walletAddress ? short(user.walletAddress) : "—"} mono />
       </div>
 
       <Card className="mt-8">
@@ -97,12 +97,14 @@ export default async function StudentDashboardPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number | string }) {
+function StatCard({ label, value, mono = false }: { label: string; value: number | string; mono?: boolean }) {
   return (
-    <Card>
+    <Card className="shadow-none">
       <CardContent className="p-5">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className={`mt-1.5 font-semibold tracking-tight ${mono ? "font-mono text-xl" : "text-3xl"}`}>
+          {value}
+        </p>
       </CardContent>
     </Card>
   );
