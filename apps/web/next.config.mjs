@@ -32,6 +32,15 @@ const nextConfig = {
   // Trace from the monorepo root so the Prisma query engine (in the pnpm store)
   // is bundled into the serverless functions on Vercel.
   outputFileTracingRoot: repoRoot,
+  // Force the Prisma native query engine (pnpm store) into every serverless
+  // function bundle — node-file-trace otherwise misses the dynamically-loaded .node.
+  outputFileTracingIncludes: {
+    "/**": [
+      "../../node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client/*.node",
+      "../../node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client/**",
+      "../../node_modules/.pnpm/prisma@*/node_modules/prisma/**"
+    ]
+  },
   experimental: {
     serverActions: { allowedOrigins: ["localhost:3000"] },
     // Keep Prisma out of the bundle so it loads from node_modules at runtime,
