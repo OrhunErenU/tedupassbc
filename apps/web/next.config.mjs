@@ -29,6 +29,9 @@ for (const file of [".env", ".env.local"]) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Trace from the monorepo root so the Prisma query engine (in the pnpm store)
+  // is bundled into the serverless functions on Vercel.
+  outputFileTracingRoot: repoRoot,
   experimental: {
     serverActions: { allowedOrigins: ["localhost:3000"] }
   },

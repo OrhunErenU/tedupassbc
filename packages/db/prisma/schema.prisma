@@ -2,7 +2,9 @@
 // Off-chain personal data lives here (KVKK). Only badge hashes go on-chain.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Include the Vercel serverless runtime engine so production lambdas can find it.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
