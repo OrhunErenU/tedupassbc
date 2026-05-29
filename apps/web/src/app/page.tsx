@@ -122,9 +122,9 @@ export default function HomePage() {
             </span>
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-[150px_1fr] sm:items-center">
-            <BadgeArt role="ORGANIZER" eventTitle="ETH Ankara 2026" clubName="TEDÜ Blockchain" date="24.05.2026" className="mx-auto max-w-[150px]" />
+            <BadgeArt role="ORGANIZER" eventTitle="Web3 101 Atölyesi" clubName="TEDÜ Blockchain" date="12.03.2026" className="mx-auto max-w-[150px]" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold">ETH Ankara 2026 · Organizatör</p>
+              <p className="text-sm font-semibold">Web3 101 Atölyesi · Organizatör</p>
               <p className="text-sm text-muted-foreground">TEDÜ Blockchain Topluluğu</p>
               <OnChainRecord
                 className="mt-3"
