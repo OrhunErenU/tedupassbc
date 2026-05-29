@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "pnpm --filter @tedu-pass/db prisma:generate && pnpm --filter @tedu-pass/web build && (node scripts/copy-prisma-engine.mjs || true)",
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "installCommand": "pnpm install --no-frozen-lockfile && pnpm rebuild @prisma/engines @prisma/client prisma",
   "outputDirectory": ".next"
 }
