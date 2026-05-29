@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "pnpm --filter @tedu-pass/db prisma:generate && pnpm --filter @tedu-pass/web build",
+  "buildCommand": "pnpm --filter @tedu-pass/db prisma:generate && pnpm --filter @tedu-pass/web build && (cp node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client/libquery_engine-*.node apps/web/.next/server/ || true)",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "outputDirectory": ".next"
 }
