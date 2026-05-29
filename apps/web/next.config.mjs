@@ -33,7 +33,10 @@ const nextConfig = {
   // is bundled into the serverless functions on Vercel.
   outputFileTracingRoot: repoRoot,
   experimental: {
-    serverActions: { allowedOrigins: ["localhost:3000"] }
+    serverActions: { allowedOrigins: ["localhost:3000"] },
+    // Keep Prisma out of the bundle so it loads from node_modules at runtime,
+    // where its native query engine lives (fixes "could not locate Query Engine").
+    serverComponentsExternalPackages: ["@prisma/client", "prisma", ".prisma/client"]
   },
   transpilePackages: ["@tedu-pass/db"]
 };
