@@ -1,8 +1,24 @@
 import { PrismaClient } from "@prisma/client";
+import { join } from "node:path";
+import { existsSync } from "node:fs";
 
 declare global {
   // eslint-disable-next-line no-var
   var __teduPrisma: PrismaClient | undefined;
+}
+
+// On Vercel, the Prisma query engine isn't reliably bundled into the serverless
+// function (pnpm monorepo). We commit the linux engine to apps/web/prisma-engine
+// and point Prisma straight at it. Guarded so local (Windows/macOS) dev is untouched.
+if (process.env.VERCEL && !process.env.PRISMA_QUERY_ENGINE_LIBRARY) {
+  const enginePath = join(
+    process.cwd(),
+    "prisma-engine",
+    "libquery_engine-rhel-openssl-3.0.x.so.node"
+  );
+  if (existsSync(enginePath)) {
+    process.env.PRISMA_QUERY_ENGINE_LIBRARY = enginePath;
+  }
 }
 
 /**

@@ -35,11 +35,7 @@ const nextConfig = {
   // Force the Prisma native query engine (pnpm store) into every serverless
   // function bundle — node-file-trace otherwise misses the dynamically-loaded .node.
   outputFileTracingIncludes: {
-    "/**": [
-      "../../node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client/*.node",
-      "../../node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client/**",
-      "../../node_modules/.pnpm/prisma@*/node_modules/prisma/**"
-    ]
+    "/**": ["./prisma-engine/*.node"]
   },
   experimental: {
     serverActions: { allowedOrigins: ["localhost:3000"] },
