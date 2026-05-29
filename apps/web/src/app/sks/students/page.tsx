@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { prisma } from "@tedu-pass/db";
+import { prisma, UserRole } from "@tedu-pass/db";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { safeQuery } from "@/lib/safe-db";
+import { requirePageRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function SksStudentsPage() {
+  await requirePageRole([UserRole.SKS_ADMIN]);
   const students = await safeQuery(
     () =>
       prisma.user.findMany({

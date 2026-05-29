@@ -1,9 +1,30 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { prisma, UserRole } from "@tedu-pass/db";
 import { privyServer } from "./privy-server";
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN ?? "tedu.edu.tr").toLowerCase();
 const COOKIE = process.env.SESSION_COOKIE_NAME ?? "tedu_pass_session";
+
+// Comma-separated allowlists chosen by us — only these emails get elevated roles.
+function emailSet(v: string | undefined): Set<string> {
+  return new Set(
+    (v ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+const SKS_ADMIN_EMAILS = emailSet(process.env.SKS_ADMIN_EMAILS);
+const CLUB_ADMIN_EMAILS = emailSet(process.env.CLUB_ADMIN_EMAILS);
+
+/** Role for an email based on our allowlists; everyone else is a student. */
+export function roleForEmail(email: string): UserRole {
+  const e = email.toLowerCase();
+  if (SKS_ADMIN_EMAILS.has(e)) return UserRole.SKS_ADMIN;
+  if (CLUB_ADMIN_EMAILS.has(e)) return UserRole.CLUB_ADMIN;
+  return UserRole.STUDENT;
+}
 
 export type SessionUser = {
   id: string;
@@ -54,15 +75,20 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const wallet = privyUser.wallet?.address ?? null;
 
+  // Role is derived from our allowlists and re-applied on every login, so adding
+  // an email to SKS_ADMIN_EMAILS / CLUB_ADMIN_EMAILS promotes them on next sign-in.
+  const role = roleForEmail(email);
+
   const user = await prisma.user.upsert({
     where: { teduEmail: email },
     create: {
       teduEmail: email,
       walletAddress: wallet,
-      role: UserRole.STUDENT
+      role
     },
     update: {
-      walletAddress: wallet ?? undefined
+      walletAddress: wallet ?? undefined,
+      role
     }
   });
 
@@ -78,6 +104,18 @@ export async function requireSessionUser(): Promise<SessionUser> {
 export async function requireRole(roles: UserRole[]): Promise<SessionUser> {
   const u = await requireSessionUser();
   if (!roles.includes(u.role)) throw new Error("Forbidden");
+  return u;
+}
+
+/**
+ * Server-component guard: send unauthorized roles away instead of rendering a
+ * panel they can't use. In DEV_LOGIN mode the client shell already gates, so we
+ * only redirect when a real (Privy) session resolves to the wrong role.
+ */
+export async function requirePageRole(roles: UserRole[], to = "/"): Promise<SessionUser | null> {
+  const u = await getSessionUser().catch(() => null);
+  if (DEV_LOGIN && !u) return null; // dev: client shell handles redirect to /dev
+  if (!u || !roles.includes(u.role)) redirect(to);
   return u;
 }
 

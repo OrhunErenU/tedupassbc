@@ -27,15 +27,19 @@ const REQUIRED_ROLE: Record<string, string> = {
 
 const navByRole: Record<string, { href: string; label: string }[]> = {
   Öğrenci: [
+    { href: "/", label: "Ana sayfa" },
     { href: "/student", label: "Cüzdanım" },
     { href: "/student/scan", label: "QR Tara" },
     { href: "/takvim", label: "Takvim" },
     { href: "/student/profile", label: "Profil" }
   ],
   "Kulüp Yöneticisi": [
-    { href: "/club", label: "Kulüplerim" }
+    { href: "/", label: "Ana sayfa" },
+    { href: "/club", label: "Kulüplerim" },
+    { href: "/takvim", label: "Takvim" }
   ],
   SKS: [
+    { href: "/", label: "Ana sayfa" },
     { href: "/sks", label: "Özet" },
     { href: "/sks/clubs", label: "Kulüpler" },
     { href: "/sks/students", label: "Öğrenciler" }

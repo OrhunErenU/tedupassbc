@@ -44,8 +44,16 @@ export default async function EventDetailPage({
                 className="aspect-square w-full"
               />
             </div>
+            <a
+              href={`/api/events/${event.id}/qr`}
+              download={`tedupass-qr-${event.id}.png`}
+              className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-tedu px-4 text-sm font-medium text-white transition hover:bg-tedu-600"
+            >
+              QR'ı indir (PNG)
+            </a>
             <p className="mt-3 text-xs text-muted-foreground">
-              Bu QR sadece etkinlik <code>ACTIVE</code> durumdayken işler.
+              İndirip yazdırabilir veya bir yere yapıştırabilirsin. QR sadece etkinlik{" "}
+              <code>ACTIVE</code> durumdayken işler.
             </p>
           </CardContent>
         </Card>

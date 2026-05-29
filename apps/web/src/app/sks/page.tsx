@@ -2,10 +2,15 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getSksSummary } from "@/lib/sks-stats";
+import { requirePageRole } from "@/lib/auth";
+import { UserRole } from "@tedu-pass/db";
 import { Trophy, Users, CalendarCheck, Building2 } from "lucide-react";
 import { ApproveClubButtons } from "./clubs-actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function SksDashboardPage() {
+  await requirePageRole([UserRole.SKS_ADMIN]);
   const s = await getSksSummary();
 
   return (

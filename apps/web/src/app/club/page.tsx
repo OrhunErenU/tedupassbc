@@ -1,13 +1,16 @@
 import Link from "next/link";
-import { prisma } from "@tedu-pass/db";
+import { prisma, UserRole } from "@tedu-pass/db";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, requirePageRole } from "@/lib/auth";
 import { safeQuery } from "@/lib/safe-db";
 
+export const dynamic = "force-dynamic";
+
 export default async function ClubIndexPage() {
+  await requirePageRole([UserRole.CLUB_ADMIN, UserRole.SKS_ADMIN]);
   const user = await getSessionUser().catch(() => null);
 
   const memberships = user

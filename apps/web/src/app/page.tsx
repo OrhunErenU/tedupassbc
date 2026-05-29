@@ -62,7 +62,6 @@ export default function HomePage() {
             <Link href="#nasil-calisir" className="transition-colors hover:text-foreground">Nasıl çalışır</Link>
             <Link href="#roller" className="transition-colors hover:text-foreground">Roller</Link>
             <Link href="/takvim" className="transition-colors hover:text-foreground">Takvim</Link>
-            <Link href="#etkinlik" className="transition-colors hover:text-foreground">ETH Ankara 2026</Link>
           </nav>
           <Button asChild variant="outline" size="sm">
             <Link href="/student">Panele git</Link>
@@ -250,54 +249,6 @@ export default function HomePage() {
               </li>
             ))}
           </ol>
-        </div>
-      </section>
-
-      {/* Event */}
-      <section id="etkinlik" className="container py-20 md:py-24">
-        <div className="overflow-hidden rounded-2xl border border-border">
-          <div className="grid md:grid-cols-[1.4fr_1fr]">
-            <div className="p-8 md:p-12">
-              <p className="eyebrow flex items-center gap-2">
-                <span className="dot bg-tedu" /> İlk canlı deployment
-              </p>
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
-                ETH Ankara 2026 — 23–24 Mayıs
-              </h2>
-              <p className="mt-4 max-w-xl leading-relaxed text-muted-foreground">
-                Katılımcılar ilk TEDU Pass rozetlerini bu hackathonda on-chain alacak.
-                Hem canlı demo hem de üniversite yönetimine sunum anı.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Button asChild>
-                  <Link href="/student">Hemen başla</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/sks">SKS sunumu</Link>
-                </Button>
-              </div>
-            </div>
-            <div className="relative flex min-h-[240px] flex-col justify-between bg-console p-8 text-[hsl(var(--console-foreground))]">
-              <div
-                className="pointer-events-none absolute inset-0 opacity-[0.15]"
-                style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }}
-              />
-              <OnChainRecord
-                title="DEPLOYMENT"
-                rows={[
-                  { k: "ağ", v: "Base Sepolia" },
-                  { k: "kontrat", v: "TEDUPassBadge" },
-                  { k: "rozet", v: "ERC-5192", hl: true },
-                  { k: "etkinlik", v: "ETH Ankara 2026" }
-                ]}
-                className="relative border-[hsl(var(--console-border))] bg-transparent"
-              />
-              <div className="relative mt-6">
-                <div className="text-[11px] uppercase tracking-[0.2em] opacity-70">ETH Ankara</div>
-                <div className="font-semibold text-5xl tracking-tight text-white">2026</div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
