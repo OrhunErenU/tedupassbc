@@ -17,7 +17,7 @@ export async function GET() {
     db = `ok:${JSON.stringify(r)}`;
   } catch (e: any) {
     code = e?.code ?? null;
-    db = `FAIL: ${String(e?.message ?? e).replace(/\s+/g, " ").slice(0, 400)}`;
+    db = `FAIL: ${String(e?.message ?? e).replace(/\s+/g, " ").slice(0, 2000)}`;
   }
 
   return NextResponse.json({
