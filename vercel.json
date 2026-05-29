@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "pnpm --filter @tedu-pass/db prisma:generate && pnpm --filter @tedu-pass/web build && (cp node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client/libquery_engine-*.node apps/web/.next/server/ || true)",
+  "buildCommand": "pnpm --filter @tedu-pass/db prisma:generate && pnpm --filter @tedu-pass/web build && (echo 'locating prisma engine:'; find node_modules -name 'libquery_engine-rhel-openssl-3.0.x.so.node' -print -exec cp {} apps/web/.next/server/ \\; ; ls -la apps/web/.next/server/libquery_engine-* || true)",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "outputDirectory": ".next"
 }
