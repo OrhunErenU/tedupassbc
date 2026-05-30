@@ -120,7 +120,7 @@ async function main() {
   // --- Events ------------------------------------------------------------
   // [club, title, daysFromNow, status, location]
   const eventSpecs = [
-    [clubs[0], "ETH Ankara 2026 Hackathon", -3, "CLOSED", "TED Üniversitesi, B Blok"],
+    [clubs[0], "Akıllı Kontrat Güvenliği Paneli", -3, "CLOSED", "TED Üniversitesi, B Blok"],
     [clubs[0], "Web3 101: Cüzdandan Akıllı Kontrata", -20, "CLOSED", "D-201"],
     [clubs[0], "Soulbound NFT Atölyesi", 10, "ACTIVE", "Kütüphane Seminer Salonu"],
     [clubs[1], "Algoritma Maratonu", -12, "CLOSED", "Bilgisayar Lab 3"],

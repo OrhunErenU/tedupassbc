@@ -59,7 +59,7 @@ export default function NewEventPage({ params }: { params: { id: string } }) {
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Başlık</Label>
-              <Input id="title" name="title" required minLength={3} placeholder="ETH Ankara 2026 — Açılış" />
+              <Input id="title" name="title" required minLength={3} placeholder="Web3 101 Atölyesi — Açılış" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Açıklama</Label>

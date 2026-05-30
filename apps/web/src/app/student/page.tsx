@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/auth";
 import { safeQuery } from "@/lib/safe-db";
 import { BadgeArt } from "@/components/badge-art";
+import { DocumentHeader } from "@/components/document-header";
 import { Trophy, QrCode } from "lucide-react";
 
 export default async function StudentDashboardPage() {
@@ -42,6 +43,14 @@ export default async function StudentDashboardPage() {
         </Button>
       }
     >
+      <DocumentHeader
+        caption={`Cüzdan · ${user?.teduEmail ?? "TEDU"}`}
+        serial={`PASS-${user?.id?.slice(0, 4).toUpperCase() ?? "0001"}`}
+        title={user?.name ? `${user.name} — başarı pasaportu` : "Başarı pasaportun"}
+        subtitle="Topladığın her rozet, devredilemez ve doğrulanabilir bir kayıt. Üstte özet, altta rozet koleksiyonun."
+        variant="violet"
+        className="mb-8"
+      />
       <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3">
         <StatCard label="Toplam rozet" value={badges.length} />
         <StatCard label="Bu dönem" value={badges.filter((b) => b.createdAt > monthsAgo(6)).length} />

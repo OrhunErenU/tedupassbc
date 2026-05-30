@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Logo, LogoMark } from "@/components/logo";
 import { BadgeArt, roleLabel } from "@/components/badge-art";
+import { Guilloche } from "@/components/security-pattern";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -32,8 +33,16 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
   const explorerTx = badge.txHash ? `https://sepolia.basescan.org/tx/${badge.txHash}` : null;
 
   return (
-    <main className="min-h-screen bg-background py-12">
-      <div className="container-tight">
+    <main className="relative min-h-screen overflow-hidden bg-background py-12">
+      <Guilloche
+        className="pointer-events-none absolute -right-40 -top-40 h-[640px] w-[640px] text-tedu/[0.06]"
+        count={36}
+      />
+      <Guilloche
+        className="pointer-events-none absolute -left-32 bottom-0 h-[420px] w-[420px] text-foreground/[0.04]"
+        count={26}
+      />
+      <div className="container-tight relative">
         <div className="flex items-center justify-between">
           <Link href="/" className="inline-block">
             <Logo />
@@ -44,8 +53,22 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
           </Badge>
         </div>
 
-        {/* Credential card */}
+        {/* Credential card — with a passport-style colored header band */}
         <Card className="mt-6 overflow-hidden shadow-none">
+          <div
+            className="relative overflow-hidden px-6 py-4 text-white"
+            style={{ background: "linear-gradient(125deg, #A60D26 0%, #C8102E 55%, #7C3AED 130%)" }}
+          >
+            <Guilloche className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 text-white/25" count={26} />
+            <div className="relative flex items-center justify-between">
+              <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/80">
+                TEDU&nbsp;PASS · Doğrulama Belgesi
+              </span>
+              <span className="font-mono text-[11px] text-white/65">
+                /{badge.id.slice(0, 8).toUpperCase()}
+              </span>
+            </div>
+          </div>
           <div className="grid gap-0 md:grid-cols-[0.85fr_1.15fr]">
             <div className="flex flex-col items-center justify-center gap-5 border-b border-border bg-secondary p-8 md:border-b-0 md:border-r">
               <BadgeArt

@@ -1,6 +1,7 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DocumentHeader } from "@/components/document-header";
 import { getSksSummary } from "@/lib/sks-stats";
 import { requirePageRole } from "@/lib/auth";
 import { UserRole } from "@tedu-pass/db";
@@ -19,6 +20,14 @@ export default async function SksDashboardPage() {
       title="SKS Dashboard"
       description="TED Üniversitesi kulüp ekosisteminin canlı özeti."
     >
+      <DocumentHeader
+        caption="SKS · Kurumsal Özet"
+        serial="REPORT-001"
+        title="Kulüp ekosistemi · canlı tablo"
+        subtitle="Onay bekleyen kulüpler, etkinlik hacmi, katılım yoğunluğu ve en aktif öğrenciler — bütçe ve onay kararlarını veriyle ver."
+        variant="red"
+        className="mb-8"
+      />
       <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={<Building2 className="h-4 w-4" />} label="Aktif kulüp" value={s.totalClubs - s.pendingClubs} hint={`${s.pendingClubs} onay bekliyor`} />
         <Stat icon={<CalendarCheck className="h-4 w-4" />} label="Bu ay etkinlik" value={s.monthEvents} hint={`${s.activeEvents} aktif`} />
