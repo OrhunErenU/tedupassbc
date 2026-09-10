@@ -1,4 +1,6 @@
+import { zeroHash } from "viem";
 import { publicClient, BADGE_ABI, badgeRef, TEDU_PASS_ADDRESS, chainConfigured } from "@/lib/chain";
+import { buildBadgeMetadata, metadataContentHash } from "@/lib/metadata";
 
 export type BadgeChainRecord =
   | { state: "unconfigured" }
@@ -11,6 +13,14 @@ export type BadgeChainRecord =
       locked: boolean;
       /** Owner on chain matches the wallet we recorded for the student. */
       ownerMatches: boolean;
+      /** keccak256 of the metadata document recorded at mint time. */
+      contentHash: string;
+      /**
+       * Whether the metadata we serve today still hashes to the value on
+       * chain. null when the token predates content hashes (zero hash) or the
+       * document could not be rebuilt.
+       */
+      metadataMatches: boolean | null;
     }
   /** The node could not be reached; we say so rather than implying "not minted". */
   | { state: "unreachable" };
@@ -39,7 +49,7 @@ export async function readBadgeChainRecord(
 
     if (tokenId === 0n) return { state: "absent" };
 
-    const [owner, locked] = await Promise.all([
+    const [owner, locked, contentHash] = await Promise.all([
       publicClient.readContract({
         address: TEDU_PASS_ADDRESS,
         abi: BADGE_ABI,
@@ -51,15 +61,30 @@ export async function readBadgeChainRecord(
         abi: BADGE_ABI,
         functionName: "locked",
         args: [tokenId]
+      }),
+      publicClient.readContract({
+        address: TEDU_PASS_ADDRESS,
+        abi: BADGE_ABI,
+        functionName: "badgeContentHash",
+        args: [tokenId]
       })
     ]);
+
+    // Re-derive the hash from what we serve now and compare with the chain.
+    let metadataMatches: boolean | null = null;
+    if (contentHash !== zeroHash) {
+      const metadata = await buildBadgeMetadata(badgeId);
+      metadataMatches = metadata ? metadataContentHash(metadata) === contentHash : null;
+    }
 
     return {
       state: "present",
       tokenId: tokenId.toString(),
       owner,
       locked,
-      ownerMatches: Boolean(expectedOwner) && owner.toLowerCase() === expectedOwner!.toLowerCase()
+      ownerMatches: Boolean(expectedOwner) && owner.toLowerCase() === expectedOwner!.toLowerCase(),
+      contentHash,
+      metadataMatches
     };
   } catch {
     return { state: "unreachable" };

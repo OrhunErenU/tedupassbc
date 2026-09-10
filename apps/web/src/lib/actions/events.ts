@@ -4,7 +4,9 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { prisma, EventStatus, BadgeRole } from "@tedu-pass/db";
 import { requireSessionUser } from "@/lib/auth";
-import { parseEventLogs } from "viem";
+import { parseEventLogs, zeroHash, type Hex } from "viem";
+import { buildBadgeMetadata, metadataContentHash } from "@/lib/metadata";
+import { pinBadgeMetadata } from "@/lib/ipfs";
 import {
   badgeRef,
   BADGE_ABI,
@@ -25,9 +27,8 @@ export type MintResult = {
   missingTokenIds: number;
 };
 
-/** tokenURI for a badge. Replaced by the IPFS-backed resolver in lib/metadata. */
-function badgeTokenUri(badgeId: string): string {
-  return `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/metadata/${badgeId}`;
+function appUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL ?? "";
 }
 
 const createEventSchema = z.object({
@@ -158,7 +159,25 @@ export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
   }
 
   const refs = mintable.map((c) => badgeRef(c.id));
-  const uris = mintable.map((c) => badgeTokenUri(c.id));
+
+  // Build the metadata document once per badge, hash it, and pin it if IPFS is
+  // configured. tokenURI is only a pointer; the hash is what ties the token to
+  // this exact document, so a badge stays verifiable even if the pointer rots.
+  const documents = await Promise.all(
+    mintable.map(async (c) => {
+      const metadata = await buildBadgeMetadata(c.id);
+      if (!metadata) {
+        return { uri: `${appUrl()}/api/metadata/${c.id}`, contentHash: zeroHash as Hex };
+      }
+      const pinned = await pinBadgeMetadata(c.id, metadata);
+      return {
+        uri: pinned ?? `${appUrl()}/api/metadata/${c.id}`,
+        contentHash: metadataContentHash(metadata)
+      };
+    })
+  );
+  const uris = documents.map((d) => d.uri);
+  const contentHashes = documents.map((d) => d.contentHash);
 
   // 2. Mint, then wait for the receipt. A submitted hash is not a mint — the
   //    transaction can still revert (e.g. a badgeRef already on chain).
@@ -166,7 +185,7 @@ export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
     address: TEDU_PASS_ADDRESS,
     abi: BADGE_ABI,
     functionName: "batchMint",
-    args: [mintable.map((c) => c.wallet as `0x${string}`), uris, refs]
+    args: [mintable.map((c) => c.wallet as `0x${string}`), uris, refs, contentHashes]
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 120_000 });

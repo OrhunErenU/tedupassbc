@@ -39,7 +39,8 @@ export const BADGE_ABI = [
     inputs: [
       { name: "to", type: "address" },
       { name: "uri", type: "string" },
-      { name: "badgeRef", type: "bytes32" }
+      { name: "badgeRef", type: "bytes32" },
+      { name: "contentHash", type: "bytes32" }
     ],
     outputs: [{ name: "tokenId", type: "uint256" }]
   },
@@ -50,9 +51,17 @@ export const BADGE_ABI = [
     inputs: [
       { name: "recipients", type: "address[]" },
       { name: "uris", type: "string[]" },
-      { name: "badgeRefs", type: "bytes32[]" }
+      { name: "badgeRefs", type: "bytes32[]" },
+      { name: "contentHashes", type: "bytes32[]" }
     ],
     outputs: [{ name: "tokenIds", type: "uint256[]" }]
+  },
+  {
+    type: "function",
+    name: "badgeContentHash",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "bytes32" }]
   },
   {
     type: "function",
@@ -92,7 +101,8 @@ export const BADGE_ABI = [
       { name: "tokenId", type: "uint256", indexed: true },
       { name: "to", type: "address", indexed: true },
       { name: "badgeRef", type: "bytes32", indexed: true },
-      { name: "tokenURI", type: "string", indexed: false }
+      { name: "tokenURI", type: "string", indexed: false },
+      { name: "contentHash", type: "bytes32", indexed: false }
     ]
   }
 ] as const;

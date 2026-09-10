@@ -191,13 +191,16 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
 function ChainVerdict({ chain }: { chain: BadgeChainRecord }) {
   if (chain.state === "present" && chain.ownerMatches) {
     return (
-      <div className="flex items-start gap-2 border-t border-white/10 px-5 py-3 text-[13px] text-emerald-300">
-        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>
-          Bu rozet Base Sepolia üzerinde doğrulandı: token kontratta mevcut, kayıtlı sahibiyle
-          eşleşiyor{chain.locked ? " ve devredilemez (kilitli)" : ""}.
-        </span>
-      </div>
+      <>
+        <div className="flex items-start gap-2 border-t border-white/10 px-5 py-3 text-[13px] text-emerald-300">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Bu rozet Base Sepolia üzerinde doğrulandı: token kontratta mevcut, kayıtlı sahibiyle
+            eşleşiyor{chain.locked ? " ve devredilemez (kilitli)" : ""}.
+          </span>
+        </div>
+        <MetadataVerdict matches={chain.metadataMatches} />
+      </>
     );
   }
   if (chain.state === "present" && !chain.ownerMatches) {
@@ -219,6 +222,41 @@ function ChainVerdict({ chain }: { chain: BadgeChainRecord }) {
         : "Bu kurulumda zincir yapılandırılmamış; rozet yalnızca TEDU Pass kaydı olarak gösteriliyor.";
   return (
     <div className="border-t border-white/10 px-5 py-3 text-[13px] text-white/70">{text}</div>
+  );
+}
+
+/**
+ * Metadata bütünlüğü: bugün sunduğumuz belge, mint anında zincire yazılan
+ * keccak256 özetiyle eşleşiyor mu. tokenURI kendi alan adımıza baksa bile
+ * belgeyi sessizce değiştiremeyiz — özet zincirde ve değiştirilemez.
+ */
+function MetadataVerdict({ matches }: { matches: boolean | null }) {
+  if (matches === null) {
+    return (
+      <div className="border-t border-white/10 px-5 py-3 text-[13px] text-white/70">
+        Bu token için zincire metadata özeti yazılmamış (özet alanı eklenmeden önce basılmış).
+      </div>
+    );
+  }
+  if (matches) {
+    return (
+      <div className="flex items-start gap-2 border-t border-white/10 px-5 py-3 text-[13px] text-emerald-300">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          Rozet bilgileri de değişmemiş: bu sayfadaki belge, zincire yazılan özetle birebir
+          aynı.
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-start gap-2 border-t border-white/10 px-5 py-3 text-[13px] text-amber-300">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>
+        Rozet bilgileri, mint anında zincire yazılan özetle eşleşmiyor. Etkinlik kaydı sonradan
+        düzenlenmiş olabilir; bu kaydı TEDU Pass ekibine bildir.
+      </span>
+    </div>
   );
 }
 
