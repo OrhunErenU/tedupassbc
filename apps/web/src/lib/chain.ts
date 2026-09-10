@@ -104,3 +104,30 @@ export function badgeRef(badgeId: string): Hex {
 export function chainConfigured(): boolean {
   return Boolean(serverWallet && TEDU_PASS_ADDRESS);
 }
+
+export type ChainStatus =
+  | { configured: true; address: Address; minter: Address; rpcUrl: string }
+  | { configured: false; missing: string[] };
+
+/**
+ * Why the chain is or is not usable.
+ *
+ * The panels used to fall back to "queued" with no explanation when the
+ * contract address or server key was missing, so a club could run a whole
+ * event believing badges were being issued. Every surface that can mint now
+ * reads this and says plainly that nothing is going on chain.
+ */
+export function chainStatus(): ChainStatus {
+  const missing: string[] = [];
+  if (!PK) missing.push("SERVER_WALLET_PRIVATE_KEY");
+  if (!CONTRACT) missing.push("TEDU_PASS_CONTRACT_ADDRESS");
+  if (missing.length > 0 || !serverAccount || !TEDU_PASS_ADDRESS) {
+    return { configured: false, missing };
+  }
+  return {
+    configured: true,
+    address: TEDU_PASS_ADDRESS,
+    minter: serverAccount.address,
+    rpcUrl: RPC_URL
+  };
+}

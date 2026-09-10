@@ -8,6 +8,7 @@ import { EventActions } from "./actions-client";
 import { AttendeeRoleSelect } from "./attendee-role-select";
 import { AddAttendeeForm, RemoveAttendeeButton } from "./attendance-controls";
 import { CheckinQr } from "./checkin-qr";
+import { ChainStatusBanner } from "@/components/chain-status-banner";
 import { checkinWindow, checkinWindowState } from "@/lib/checkin-code";
 
 export default async function EventDetailPage({
@@ -39,6 +40,7 @@ export default async function EventDetailPage({
       description={`${event.club.name} · ${event.date.toLocaleString("tr-TR")}`}
       actions={<Badge variant={event.status === EventStatus.ACTIVE ? "success" : event.status === EventStatus.CLOSED ? "outline" : "warning"}>{event.status}</Badge>}
     >
+      <ChainStatusBanner />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
         <Card>
           <CardHeader>

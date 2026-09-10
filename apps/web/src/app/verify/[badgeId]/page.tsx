@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Logo, LogoMark } from "@/components/logo";
 import { BadgeArt, roleLabel } from "@/components/badge-art";
 import { Guilloche } from "@/components/security-pattern";
-import { ShieldCheck, ExternalLink } from "lucide-react";
+import { ShieldCheck, ExternalLink, AlertTriangle } from "lucide-react";
+import { readBadgeChainRecord, type BadgeChainRecord } from "@/lib/badge-chain";
+import { chainStatus } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +31,13 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
     ? badge.user.name ?? badge.user.teduEmail.split("@")[0]
     : "Gizli";
 
-  const contract = process.env.TEDU_PASS_CONTRACT_ADDRESS || null;
+  const status = chainStatus();
+  const contract = status.configured ? status.address : null;
   const explorerTx = badge.txHash ? `https://sepolia.basescan.org/tx/${badge.txHash}` : null;
+
+  // Read the contract directly: an employer checking this page should not have
+  // to take our database's word for it.
+  const chain = await readBadgeChainRecord(badge.id, badge.user.walletAddress);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-background py-12">
@@ -120,20 +127,37 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
               Zincir kaydı
             </span>
             <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[11px] text-white/80">
-              {badge.txHash ? "on-chain" : "kuyrukta"}
+              {chain.state === "present"
+                ? "zincirde doğrulandı"
+                : chain.state === "absent"
+                  ? "kuyrukta"
+                  : chain.state === "unreachable"
+                    ? "zincire ulaşılamadı"
+                    : "zincir kapalı"}
             </span>
           </div>
           <dl className="grid gap-px bg-white/5 sm:grid-cols-2">
             <ChainRow label="Ağ" value="Base Sepolia" />
             <ChainRow label="Standart" value="ERC-5192 · Soulbound" />
             <ChainRow label="Kontrat" value={contract ? shortHex(contract) : "—"} />
-            <ChainRow label="Token ID" value={badge.tokenId ?? "—"} />
+            <ChainRow
+              label="Token ID"
+              value={chain.state === "present" ? chain.tokenId : badge.tokenId ?? "—"}
+            />
             <ChainRow
               label="Sahip cüzdanı"
-              value={badge.user.walletAddress ? shortHex(badge.user.walletAddress) : "—"}
+              value={
+                chain.state === "present"
+                  ? shortHex(chain.owner)
+                  : badge.user.walletAddress
+                    ? shortHex(badge.user.walletAddress)
+                    : "—"
+              }
             />
             <ChainRow label="İşlem" value={badge.txHash ? shortHex(badge.txHash) : "—"} />
           </dl>
+
+          <ChainVerdict chain={chain} />
           {explorerTx ? (
             <div className="border-t border-white/10 px-5 py-3">
               <Button
@@ -157,6 +181,44 @@ export default async function VerifyPage({ params }: { params: { badgeId: string
         </p>
       </div>
     </main>
+  );
+}
+
+/**
+ * Zincirden okunan sonucun düz Türkçe özeti. "Kuyrukta" ile "zincire
+ * ulaşılamadı" bilerek ayrı: ikincisi rozetin sahte olduğu anlamına gelmez.
+ */
+function ChainVerdict({ chain }: { chain: BadgeChainRecord }) {
+  if (chain.state === "present" && chain.ownerMatches) {
+    return (
+      <div className="flex items-start gap-2 border-t border-white/10 px-5 py-3 text-[13px] text-emerald-300">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          Bu rozet Base Sepolia üzerinde doğrulandı: token kontratta mevcut, kayıtlı sahibiyle
+          eşleşiyor{chain.locked ? " ve devredilemez (kilitli)" : ""}.
+        </span>
+      </div>
+    );
+  }
+  if (chain.state === "present" && !chain.ownerMatches) {
+    return (
+      <div className="flex items-start gap-2 border-t border-white/10 px-5 py-3 text-[13px] text-amber-300">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          Token zincirde mevcut ancak sahibi bizim kaydımızdaki cüzdanla eşleşmiyor. Bu kaydı
+          TEDU Pass ekibine bildir.
+        </span>
+      </div>
+    );
+  }
+  const text =
+    chain.state === "absent"
+      ? "Bu rozet henüz zincire yazılmadı. Etkinlik kapandıktan sonra kulüp rozetleri bastığında burada zincir kaydı görünecek."
+      : chain.state === "unreachable"
+        ? "Zincire şu an ulaşılamadı, bu yüzden kayıt bağımsız olarak teyit edilemedi. Rozetin geçersiz olduğu anlamına gelmez — daha sonra tekrar dene."
+        : "Bu kurulumda zincir yapılandırılmamış; rozet yalnızca TEDU Pass kaydı olarak gösteriliyor.";
+  return (
+    <div className="border-t border-white/10 px-5 py-3 text-[13px] text-white/70">{text}</div>
   );
 }
 
