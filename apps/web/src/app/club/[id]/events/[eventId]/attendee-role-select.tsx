@@ -1,9 +1,9 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { setAttendanceRole } from "@/lib/actions/clubs";
-
-const ROLES = ["ATTENDEE", "ORGANIZER", "SPEAKER", "MENTOR", "VOLUNTEER"] as const;
+import { BADGE_ROLES, BADGE_ROLE_LABEL } from "@/lib/roles";
 
 export function AttendeeRoleSelect({
   attendanceId,
@@ -12,21 +12,27 @@ export function AttendeeRoleSelect({
   attendanceId: string;
   current: string;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
     <select
+      aria-label="Katılım rolü"
       disabled={pending}
       defaultValue={current}
       onChange={(e) =>
-        startTransition(() =>
-          setAttendanceRole({ attendanceId, role: e.target.value as (typeof ROLES)[number] })
-        )
+        startTransition(async () => {
+          await setAttendanceRole({
+            attendanceId,
+            role: e.target.value as (typeof BADGE_ROLES)[number]
+          });
+          router.refresh();
+        })
       }
       className="rounded-md border border-input bg-background px-2 py-1 text-xs"
     >
-      {ROLES.map((r) => (
+      {BADGE_ROLES.map((r) => (
         <option key={r} value={r}>
-          {r}
+          {BADGE_ROLE_LABEL[r]}
         </option>
       ))}
     </select>

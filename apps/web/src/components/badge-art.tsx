@@ -1,14 +1,10 @@
 import { cn } from "@/lib/utils";
 
-export type BadgeRoleKey = "ATTENDEE" | "ORGANIZER" | "SPEAKER" | "MENTOR" | "VOLUNTEER";
+import { BADGE_ROLE_LABEL, badgeRoleLabel, type BadgeRoleKey } from "@/lib/roles";
 
-const ROLE_LABEL: Record<BadgeRoleKey, string> = {
-  ATTENDEE: "Katılımcı",
-  ORGANIZER: "Organizatör",
-  SPEAKER: "Konuşmacı",
-  MENTOR: "Mentor",
-  VOLUNTEER: "Gönüllü"
-};
+export type { BadgeRoleKey };
+
+const ROLE_LABEL = BADGE_ROLE_LABEL;
 
 // Each role gets its own gradient + glyph so a wallet of badges reads as a varied,
 // collectible set rather than identical tiles.
@@ -23,9 +19,7 @@ const ROLE_THEME: Record<
   ATTENDEE: { from: "#2563EB", to: "#1E3A8A", ring: "#9DBDFB", glyph: "M5 13l4 4L19 7" }
 };
 
-export function roleLabel(role: string) {
-  return ROLE_LABEL[role as BadgeRoleKey] ?? role;
-}
+export const roleLabel = badgeRoleLabel;
 
 /**
  * Certificate-style soulbound badge artwork. Deterministic per role; carries the

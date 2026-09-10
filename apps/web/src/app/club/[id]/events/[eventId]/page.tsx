@@ -1,16 +1,21 @@
 import { notFound } from "next/navigation";
 import { prisma, EventStatus } from "@tedu-pass/db";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { requireClubManagerPage } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EventActions } from "./actions-client";
 import { AttendeeRoleSelect } from "./attendee-role-select";
+import { AddAttendeeForm, RemoveAttendeeButton } from "./attendance-controls";
 
 export default async function EventDetailPage({
   params
 }: {
   params: { id: string; eventId: string };
 }) {
+  // Guard before the attendee query: a redirect thrown by the layout still lets
+  // this page render, and its output (names + e-mails) rides along in the 307 body.
+  await requireClubManagerPage(params.id);
   const event = await prisma.event.findUnique({
     where: { id: params.eventId },
     include: {
@@ -65,24 +70,32 @@ export default async function EventDetailPage({
                 <CardTitle>Katılımcılar</CardTitle>
                 <Badge variant="outline">{event._count.attendances} kişi</Badge>
               </div>
-              <CardDescription>QR'ı tarayan herkes burada görünür.</CardDescription>
+              <CardDescription>
+                QR'ı tarayan herkes burada görünür. Telefonu tükenen ya da QR'a
+                yetişemeyen katılımcıyı TEDÜ e-postasıyla elle ekleyebilirsin.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <AddAttendeeForm eventId={event.id} />
               {event.attendances.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Henüz katılım yok.</p>
               ) : (
                 <ul className="divide-y divide-border text-sm">
                   {event.attendances.map((a) => (
-                    <li key={a.id} className="flex items-center justify-between py-2">
-                      <div>
-                        <div className="font-medium">{a.user.name ?? a.user.teduEmail}</div>
-                        <div className="text-xs text-muted-foreground">{a.user.teduEmail}</div>
+                    <li key={a.id} className="flex items-center justify-between gap-2 py-2">
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{a.user.name ?? a.user.teduEmail}</div>
+                        <div className="truncate text-xs text-muted-foreground">{a.user.teduEmail}</div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="hidden text-xs text-muted-foreground sm:inline">
                           {a.checkedInAt.toLocaleTimeString("tr-TR")}
                         </span>
                         <AttendeeRoleSelect attendanceId={a.id} current={a.role} />
+                        <RemoveAttendeeButton
+                          attendanceId={a.id}
+                          name={a.user.name ?? a.user.teduEmail}
+                        />
                       </div>
                     </li>
                   ))}

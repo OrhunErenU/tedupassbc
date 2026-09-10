@@ -114,8 +114,38 @@ export async function requireRole(roles: UserRole[]): Promise<SessionUser> {
  */
 export async function requirePageRole(roles: UserRole[], to = "/"): Promise<SessionUser | null> {
   const u = await getSessionUser().catch(() => null);
-  if (DEV_LOGIN && !u) return null; // dev: client shell handles redirect to /dev
+  // Dev demo mode still needs a session. Letting the client shell do the
+  // redirecting means the panel renders first and ships real student data to an
+  // unauthenticated request, so send them to the impersonation switcher here.
+  if (DEV_LOGIN && !u) redirect("/dev");
   if (!u || !roles.includes(u.role)) redirect(to);
+  return u;
+}
+
+/**
+ * Server-component guard for anything under /club/[id].
+ *
+ * requirePageRole only checks the *global* role, so a club admin could open a
+ * club they have nothing to do with and read its attendee list. This checks
+ * membership in that specific club: you must be an approved PRESIDENT/BOARD
+ * member of it. SKS staff keep read access — university-wide oversight is their job.
+ */
+export async function requireClubManagerPage(
+  clubId: string,
+  to = "/club"
+): Promise<SessionUser | null> {
+  const u = await getSessionUser().catch(() => null);
+  if (DEV_LOGIN && !u) redirect("/dev");
+  if (!u) redirect("/");
+  if (u.role === UserRole.SKS_ADMIN) return u;
+  if (u.role !== UserRole.CLUB_ADMIN) redirect("/");
+
+  const membership = await prisma.clubMember
+    .findUnique({ where: { userId_clubId: { userId: u.id, clubId } } })
+    .catch(() => null);
+  if (!membership || membership.status !== "APPROVED" || membership.role === "MEMBER") {
+    redirect(to);
+  }
   return u;
 }
 

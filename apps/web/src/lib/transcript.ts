@@ -1,5 +1,6 @@
 import { prisma } from "@tedu-pass/db";
 import { termPartsForDate, buildTerm, type Term } from "@/lib/term";
+import { BADGE_ROLE_LABEL } from "@/lib/roles";
 
 /**
  * Etkinlik Katılım Transkripti verisi.
@@ -55,13 +56,7 @@ export type Transcript = {
   };
 };
 
-export const ROLE_LABEL_TR: Record<string, string> = {
-  ATTENDEE: "Katılımcı",
-  ORGANIZER: "Organizatör",
-  SPEAKER: "Konuşmacı",
-  MENTOR: "Mentor",
-  VOLUNTEER: "Gönüllü"
-};
+export const ROLE_LABEL_TR: Record<string, string> = BADGE_ROLE_LABEL;
 
 export const CLUB_ROLE_LABEL_TR: Record<string, string> = {
   PRESIDENT: "Başkan",
