@@ -1,6 +1,7 @@
 import { prisma } from "@tedu-pass/db";
 import { termPartsForDate, buildTerm, type Term } from "@/lib/term";
 import { BADGE_ROLE_LABEL } from "@/lib/roles";
+import { maskStudentId } from "@/lib/share";
 
 /**
  * Etkinlik Katılım Transkripti verisi.
@@ -42,6 +43,8 @@ export type Transcript = {
     title: string | null;
     avatarUrl: string | null;
   };
+  /** True when studentId above is masked — the document says so on its face. */
+  studentIdMasked: boolean;
   /** Belge numarası — kullanıcı kimliğinden türetilir, kalıcıdır. */
   serial: string;
   issuedAt: Date;
@@ -68,7 +71,18 @@ export function transcriptSerial(userId: string): string {
   return `TEDU-PASS/${userId.slice(-8).toUpperCase()}`;
 }
 
-export async function getTranscript(userId: string): Promise<Transcript | null> {
+export type TranscriptOptions = {
+  /**
+   * Show the student number in full. Only for the student's own view and for
+   * SKS staff, who already hold that field. Shared links default to masked.
+   */
+  revealStudentId?: boolean;
+};
+
+export async function getTranscript(
+  userId: string,
+  options: TranscriptOptions = {}
+): Promise<Transcript | null> {
   const user = await prisma.user
     .findUnique({
       where: { id: userId },
@@ -132,8 +146,11 @@ export async function getTranscript(userId: string): Promise<Transcript | null> 
 
   const clubNames = new Set(attendances.map((a) => a.event.club.name));
 
+  const revealStudentId = options.revealStudentId ?? false;
+
   return {
-    user,
+    user: revealStudentId ? user : { ...user, studentId: maskStudentId(user.studentId) },
+    studentIdMasked: !revealStudentId && Boolean(user.studentId),
     serial: transcriptSerial(user.id),
     issuedAt: new Date(),
     groups,

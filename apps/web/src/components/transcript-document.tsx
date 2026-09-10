@@ -8,7 +8,7 @@ import { ShieldCheck } from "lucide-react";
  * Resmî Etkinlik Katılım Transkripti.
  *
  * Aynı belge iki yerde görünür: öğrencinin kendi sayfası (/student/transkript)
- * ve paylaşılabilir doğrulama bağlantısı (/transkript/[id]). Yazdırma için
+ * ve paylaşılabilir doğrulama bağlantısı (/transkript/[token]). Yazdırma için
  * optimize edilmiştir — tarayıcıdan "PDF olarak kaydet" ile resmî belge çıkar.
  */
 
@@ -16,7 +16,14 @@ function fmtDate(d: Date) {
   return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-export function TranscriptDocument({ data, verifyUrl }: { data: Transcript; verifyUrl: string }) {
+export function TranscriptDocument({
+  data,
+  verifyUrl
+}: {
+  data: Transcript;
+  /** Only shared copies carry a URL; the student's own view has no fixed address. */
+  verifyUrl?: string;
+}) {
   const { user, totals } = data;
   const displayName = user.name ?? user.teduEmail.split("@")[0];
 
@@ -66,7 +73,11 @@ export function TranscriptDocument({ data, verifyUrl }: { data: Transcript; veri
           {user.title ? <p className="text-sm text-muted-foreground">{user.title}</p> : null}
           <dl className="mt-3 grid gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
             <Field label="Kurum e-postası" value={user.teduEmail} />
-            <Field label="Öğrenci numarası" value={user.studentId ?? "—"} />
+            <Field
+              label="Öğrenci numarası"
+              value={user.studentId ?? "—"}
+              hint={data.studentIdMasked ? "KVKK gereği maskeli" : undefined}
+            />
           </dl>
         </div>
       </section>
@@ -166,7 +177,9 @@ export function TranscriptDocument({ data, verifyUrl }: { data: Transcript; veri
               Her satır, etkinlik anında QR ile alınmış check-in kaydına dayanır ve elle
               düzenlenemez. Belgenin güncel halini aşağıdaki adresten teyit edebilirsiniz.
             </p>
-            <p className="mt-2 break-all font-mono text-[11px] text-foreground">{verifyUrl}</p>
+            {verifyUrl ? (
+              <p className="mt-2 break-all font-mono text-[11px] text-foreground">{verifyUrl}</p>
+            ) : null}
           </div>
           <div className="text-right font-mono text-[10px] leading-relaxed text-muted-foreground">
             <div>TEDU PASS</div>
@@ -179,11 +192,14 @@ export function TranscriptDocument({ data, verifyUrl }: { data: Transcript; veri
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex gap-2">
       <dt className="shrink-0 text-muted-foreground">{label}:</dt>
-      <dd className="min-w-0 truncate font-medium">{value}</dd>
+      <dd className="min-w-0 truncate font-medium">
+        {value}
+        {hint ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">({hint})</span> : null}
+      </dd>
     </div>
   );
 }

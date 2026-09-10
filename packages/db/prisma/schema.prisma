@@ -63,6 +63,7 @@ model User {
   memberships ClubMember[]
   attendances Attendance[]
   badges      Badge[]
+  shareLinks  ShareLink[]
 }
 
 model Club {
@@ -156,4 +157,28 @@ model Badge {
 
   @@unique([badgeTemplateId, userId])
   @@index([txHash])
+}
+
+/// A revocable, expiring capability to view one student's transcript without
+/// signing in. The transcript used to be addressed by the student's own user id,
+/// which meant the URL could never be withdrawn and any leaked id exposed the
+/// document. A token decouples the two: the student can hand one out per
+/// employer and revoke it later.
+model ShareLink {
+  id     String @id @default(cuid())
+  token  String @unique
+  userId String
+  /// Student's own note, e.g. "Erasmus başvurusu".
+  label  String?
+  /// Student numbers stay masked unless the student opts in for this link.
+  revealStudentId Boolean @default(false)
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+  revokedAt    DateTime?
+  lastViewedAt DateTime?
+  viewCount    Int       @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
