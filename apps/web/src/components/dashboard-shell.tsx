@@ -30,6 +30,7 @@ const navByRole: Record<string, { href: string; label: string }[]> = {
     { href: "/", label: "Ana sayfa" },
     { href: "/student", label: "Cüzdanım" },
     { href: "/student/scan", label: "QR Tara" },
+    { href: "/student/transkript", label: "Transkript" },
     { href: "/takvim", label: "Takvim" },
     { href: "/student/profile", label: "Profil" }
   ],
@@ -42,7 +43,8 @@ const navByRole: Record<string, { href: string; label: string }[]> = {
     { href: "/", label: "Ana sayfa" },
     { href: "/sks", label: "Özet" },
     { href: "/sks/clubs", label: "Kulüpler" },
-    { href: "/sks/students", label: "Öğrenciler" }
+    { href: "/sks/students", label: "Öğrenciler" },
+    { href: "/sks/rapor", label: "Raporlar" }
   ]
 };
 

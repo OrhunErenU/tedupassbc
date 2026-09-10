@@ -126,3 +126,45 @@
     @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Yazdirma - resmi belge ciktisi (Etkinlik Katilim Transkripti).
+   Tarayicidan "PDF olarak kaydet" secildiginde temiz, kurumsal bir sayfa cikar:
+   panel kromu gizlenir, renkli bant korunur, tablolar sayfa sonunda bolunmez.
+   -------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* Panel kromu ve gezinme yazdirilmaz. */
+  header.sticky,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Arka plan renkleri (pasaport bandi) yazdirmada da korunsun. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Satir ve bolumler sayfa sonunda ikiye bolunmesin. */
+  tr,
+  thead,
+  .break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+}

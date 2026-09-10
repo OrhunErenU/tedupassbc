@@ -8,7 +8,7 @@ import { getSessionUser } from "@/lib/auth";
 import { safeQuery } from "@/lib/safe-db";
 import { BadgeArt } from "@/components/badge-art";
 import { DocumentHeader } from "@/components/document-header";
-import { Trophy, QrCode } from "lucide-react";
+import { Trophy, QrCode, FileText } from "lucide-react";
 
 export default async function StudentDashboardPage() {
   const user = await getSessionUser().catch(() => null);
@@ -35,12 +35,20 @@ export default async function StudentDashboardPage() {
       title={user ? `Merhaba, ${user.name ?? user.teduEmail.split("@")[0]}` : "Cüzdanım"}
       description="Toplandığın tüm rozetler burada."
       actions={
-        <Button asChild>
-          <Link href="/student/scan">
-            <QrCode className="h-4 w-4" />
-            QR Tara
-          </Link>
-        </Button>
+        <>
+          <Button asChild variant="outline">
+            <Link href="/student/transkript">
+              <FileText className="h-4 w-4" />
+              Transkriptim
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/student/scan">
+              <QrCode className="h-4 w-4" />
+              QR Tara
+            </Link>
+          </Button>
+        </>
       }
     >
       <DocumentHeader

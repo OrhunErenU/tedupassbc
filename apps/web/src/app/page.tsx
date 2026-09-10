@@ -5,7 +5,7 @@ import { Logo, LogoMark } from "@/components/logo";
 import { BadgeArt } from "@/components/badge-art";
 import { OnChainRecord } from "@/components/onchain-record";
 import { Guilloche, GridField } from "@/components/security-pattern";
-import { QrCode, ShieldCheck, Trophy, Users, Building2, ArrowRight, Sparkles } from "lucide-react";
+import { QrCode, ShieldCheck, Trophy, Users, Building2, ArrowRight, Sparkles, FileText, BarChart3, Download } from "lucide-react";
 
 const roles = [
   {
@@ -61,6 +61,7 @@ export default function HomePage() {
           <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
             <Link href="#nasil-calisir" className="transition-colors hover:text-foreground">Nasıl çalışır</Link>
             <Link href="#roller" className="transition-colors hover:text-foreground">Roller</Link>
+            <Link href="#kurum" className="transition-colors hover:text-foreground">Kurumsal</Link>
             <Link href="/takvim" className="transition-colors hover:text-foreground">Takvim</Link>
           </nav>
           <Button asChild variant="outline" size="sm">
@@ -249,6 +250,79 @@ export default function HomePage() {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      <section id="kurum" className="container py-20 md:py-24">
+        <div className="max-w-2xl">
+          <p className="eyebrow">Kurumsal kazanım</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+            Kâğıt iş yükü biter, kayıt doğrulanabilir hale gelir
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Katılım listeleri, imza föyleri ve elle tutulan tablolar yerine tek kaynak:
+            etkinlik anında QR ile alınan, sonradan düzenlenemeyen kayıt.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-6 lg:grid-cols-2">
+          {/* Ogrenci kazanimi */}
+          <div className="flex flex-col rounded-2xl border border-border bg-card p-7">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-role-attendee text-white">
+              <FileText className="h-5 w-5" />
+            </span>
+            <h3 className="mt-5 text-xl font-semibold tracking-tight">
+              Öğrenciye: resmî katılım transkripti
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Her öğrenci, dönem dönem ayrılmış katılım geçmişini tek sayfalık resmî bir
+              belge olarak indirir. Burs komisyonu, Erasmus ofisi veya işveren, belgedeki
+              bağlantıdan kaydı hesap açmadan teyit eder.
+            </p>
+            <ul className="mt-5 space-y-2.5 text-sm">
+              <li className="flex gap-2.5">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                Her satır QR check-in kaydına dayanır, elle düzenlenemez
+              </li>
+              <li className="flex gap-2.5">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                Topluluk görevleri kulüp yönetimince onaylanır
+              </li>
+              <li className="flex gap-2.5">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                PDF olarak indirilir, mezuniyet dosyasına eklenir
+              </li>
+            </ul>
+          </div>
+
+          {/* SKS kazanimi */}
+          <div className="flex flex-col rounded-2xl border border-border bg-card p-7">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-tedu text-white">
+              <BarChart3 className="h-5 w-5" />
+            </span>
+            <h3 className="mt-5 text-xl font-semibold tracking-tight">
+              SKS&apos;ye: dönem raporu, tek tıkla Excel
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Hangi kulüp kaç etkinlik yaptı, kaç farklı öğrenciye ulaştı, katılım nasıl
+              dağıldı — güz/bahar kırılımıyla hazır. Bütçe görüşmesine, akreditasyon
+              dosyasına ve rektörlük sunumuna doğrudan girer.
+            </p>
+            <ul className="mt-5 space-y-2.5 text-sm">
+              <li className="flex gap-2.5">
+                <Download className="mt-0.5 h-4 w-4 shrink-0 text-tedu" />
+                Kulüp, öğrenci ve etkinlik raporları CSV/Excel olarak
+              </li>
+              <li className="flex gap-2.5">
+                <Download className="mt-0.5 h-4 w-4 shrink-0 text-tedu" />
+                Dönem seçilir, tablolar anında yeniden hesaplanır
+              </li>
+              <li className="flex gap-2.5">
+                <Download className="mt-0.5 h-4 w-4 shrink-0 text-tedu" />
+                Türkçe karakter ve sütun ayrımı Excel uyumlu
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
