@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@tedu-pass/db";
+import { devLoginEnabled } from "@/lib/dev-login";
 
 export const runtime = "nodejs";
 
-const DEV_LOGIN = process.env.DEV_LOGIN === "1";
-
-/** Dev-only impersonation. Disabled unless DEV_LOGIN=1 (never in production). */
+/**
+ * Dev-only impersonation. Requires DEV_LOGIN=1 *and* a non-production
+ * deployment. Evaluated per request rather than at module load so the guard
+ * cannot be frozen in by a build that happened under different env.
+ */
 export async function GET(req: NextRequest) {
-  if (!DEV_LOGIN) return NextResponse.json({ error: "disabled" }, { status: 404 });
+  if (!devLoginEnabled()) return NextResponse.json({ error: "disabled" }, { status: 404 });
 
   const email = req.nextUrl.searchParams.get("email")?.toLowerCase();
   const redirect = req.nextUrl.searchParams.get("redirect") ?? "/student";
