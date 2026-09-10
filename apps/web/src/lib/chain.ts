@@ -53,6 +53,47 @@ export const BADGE_ABI = [
       { name: "badgeRefs", type: "bytes32[]" }
     ],
     outputs: [{ name: "tokenIds", type: "uint256[]" }]
+  },
+  {
+    type: "function",
+    name: "badgeRefToToken",
+    stateMutability: "view",
+    inputs: [{ name: "badgeRef", type: "bytes32" }],
+    outputs: [{ name: "tokenId", type: "uint256" }]
+  },
+  {
+    type: "function",
+    name: "ownerOf",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "owner", type: "address" }]
+  },
+  {
+    type: "function",
+    name: "locked",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }]
+  },
+  {
+    type: "function",
+    name: "tokenURI",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "string" }]
+  },
+  {
+    // Emitted once per minted badge. batchMint settles a whole cohort in one
+    // transaction, so the receipt logs are the only way to learn which tokenId
+    // belongs to which badge.
+    type: "event",
+    name: "BadgeMinted",
+    inputs: [
+      { name: "tokenId", type: "uint256", indexed: true },
+      { name: "to", type: "address", indexed: true },
+      { name: "badgeRef", type: "bytes32", indexed: true },
+      { name: "tokenURI", type: "string", indexed: false }
+    ]
   }
 ] as const;
 

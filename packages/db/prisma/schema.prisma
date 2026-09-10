@@ -144,7 +144,10 @@ model Badge {
   badgeTemplateId String
   userId          String
   tokenId         String?  @unique
-  txHash          String?  @unique
+  // NOT unique: batchMint settles every badge of an event in one transaction, so
+  // a whole cohort legitimately shares one txHash. A unique constraint here made
+  // the second badge of any batch fail to record its mint.
+  txHash          String?
   mintedAt        DateTime?
   createdAt       DateTime @default(now())
 
@@ -152,4 +155,5 @@ model Badge {
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([badgeTemplateId, userId])
+  @@index([txHash])
 }

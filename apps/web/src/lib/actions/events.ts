@@ -2,9 +2,33 @@
 
 import { randomBytes } from "crypto";
 import { z } from "zod";
-import { prisma, EventStatus, BadgeRole, UserRole } from "@tedu-pass/db";
+import { prisma, EventStatus, BadgeRole } from "@tedu-pass/db";
 import { requireSessionUser } from "@/lib/auth";
-import { badgeRef, BADGE_ABI, serverWallet, TEDU_PASS_ADDRESS, chainConfigured } from "@/lib/chain";
+import { parseEventLogs } from "viem";
+import {
+  badgeRef,
+  BADGE_ABI,
+  publicClient,
+  serverWallet,
+  TEDU_PASS_ADDRESS,
+  chainConfigured
+} from "@/lib/chain";
+
+export type MintResult = {
+  /** Badges whose mint is now recorded on chain and in the DB. */
+  minted: number;
+  /** Badges still waiting — no wallet yet, or the chain is not configured. */
+  queued: number;
+  onChain: boolean;
+  txHash?: string;
+  /** Minted but the receipt carried no BadgeMinted log for them (should be 0). */
+  missingTokenIds: number;
+};
+
+/** tokenURI for a badge. Replaced by the IPFS-backed resolver in lib/metadata. */
+function badgeTokenUri(badgeId: string): string {
+  return `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/metadata/${badgeId}`;
+}
 
 const createEventSchema = z.object({
   clubId: z.string().min(1),
@@ -66,9 +90,14 @@ export async function closeEvent(eventId: string) {
 
 /**
  * Mint pending badges for a closed event.
- * Creates Badge rows in DB and (if chain configured) batch-mints on-chain.
+ *
+ * Two DB transactions with the chain call between them, deliberately: a Postgres
+ * transaction must never stay open across an on-chain round-trip (batchMint plus
+ * receipt is seconds, which would hold row locks and hit the transaction timeout).
+ * So badge rows are created in one transaction, minted, then settled in another.
+ * Nothing is marked minted until the receipt confirms the transaction succeeded.
  */
-export async function mintBadgesForEvent(eventId: string) {
+export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
   const user = await requireSessionUser();
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -85,49 +114,84 @@ export async function mintBadgesForEvent(eventId: string) {
   });
   if (!membership || membership.role === "MEMBER") throw new Error("Yetki yok.");
 
-  const created: { id: string; userId: string; templateId: string; wallet: string | null }[] = [];
-  for (const att of event.attendances) {
-    const template = event.badgeTemplates.find((t) => t.roleType === att.role)
-      ?? event.badgeTemplates.find((t) => t.roleType === BadgeRole.ATTENDEE);
-    if (!template) continue;
-    const badge = await prisma.badge.upsert({
-      where: { badgeTemplateId_userId: { badgeTemplateId: template.id, userId: att.userId } },
-      create: { badgeTemplateId: template.id, userId: att.userId },
-      update: {}
-    });
-    if (!badge.txHash) {
-      created.push({ id: badge.id, userId: att.userId, templateId: template.id, wallet: att.user.walletAddress });
+  // 1. Make sure every attendee has a Badge row. The row id is what we hash into
+  //    badgeRef, so it has to exist before we can mint.
+  const pending: { id: string; wallet: string | null }[] = [];
+  await prisma.$transaction(async (tx) => {
+    for (const att of event.attendances) {
+      const template =
+        event.badgeTemplates.find((t) => t.roleType === att.role) ??
+        event.badgeTemplates.find((t) => t.roleType === BadgeRole.ATTENDEE);
+      if (!template) continue;
+      const badge = await tx.badge.upsert({
+        where: { badgeTemplateId_userId: { badgeTemplateId: template.id, userId: att.userId } },
+        create: { badgeTemplateId: template.id, userId: att.userId },
+        update: {}
+      });
+      if (!badge.mintedAt) pending.push({ id: badge.id, wallet: att.user.walletAddress });
     }
-  }
+  });
 
   if (!chainConfigured() || !serverWallet || !TEDU_PASS_ADDRESS) {
-    return { minted: 0, queued: created.length, onChain: false };
+    return { minted: 0, queued: pending.length, onChain: false, missingTokenIds: 0 };
   }
 
-  const mintable = created.filter((c) => c.wallet);
-  if (mintable.length === 0) return { minted: 0, queued: created.length, onChain: true };
+  // Students who have never signed in have no wallet yet; their badge stays queued
+  // and mints on a later run, once Privy has created one for them.
+  const mintable = pending.filter((c) => c.wallet);
+  const waitingForWallet = pending.length - mintable.length;
+  if (mintable.length === 0) {
+    return { minted: 0, queued: waitingForWallet, onChain: true, missingTokenIds: 0 };
+  }
 
-  const recipients = mintable.map((c) => c.wallet as `0x${string}`);
   const refs = mintable.map((c) => badgeRef(c.id));
-  const uris = mintable.map(
-    (c) => `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/metadata/${c.id}`
-  );
+  const uris = mintable.map((c) => badgeTokenUri(c.id));
 
+  // 2. Mint, then wait for the receipt. A submitted hash is not a mint — the
+  //    transaction can still revert (e.g. a badgeRef already on chain).
   const hash = await serverWallet.writeContract({
     address: TEDU_PASS_ADDRESS,
     abi: BADGE_ABI,
     functionName: "batchMint",
-    args: [recipients, uris, refs]
+    args: [mintable.map((c) => c.wallet as `0x${string}`), uris, refs]
   });
 
-  await Promise.all(
-    mintable.map((c) =>
+  const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 120_000 });
+  if (receipt.status !== "success") {
+    throw new Error(`Zincir işlemi başarısız (${hash}). Rozetler basılmadı, tekrar deneyebilirsin.`);
+  }
+
+  // 3. Read each badge's tokenId out of the receipt logs. batchMint assigns ids
+  //    sequentially inside the call, so the log is the only authoritative source.
+  const logs = parseEventLogs({ abi: BADGE_ABI, eventName: "BadgeMinted", logs: receipt.logs });
+  const tokenByRef = new Map<string, string>();
+  for (const log of logs) {
+    tokenByRef.set(log.args.badgeRef.toLowerCase(), log.args.tokenId.toString());
+  }
+
+  const settled = mintable.map((c, i) => ({
+    id: c.id,
+    tokenId: tokenByRef.get(refs[i].toLowerCase()) ?? null
+  }));
+  const mintedAt = new Date();
+
+  // 4. One transaction for the whole cohort: either every badge records its mint
+  //    or none does, so a partial write can never leave a badge minted on chain
+  //    but unrecorded here.
+  await prisma.$transaction(
+    settled.map((b) =>
       prisma.badge.update({
-        where: { id: c.id },
-        data: { txHash: hash, mintedAt: new Date() }
+        where: { id: b.id },
+        data: { txHash: hash, tokenId: b.tokenId, mintedAt }
       })
     )
   );
 
-  return { minted: mintable.length, queued: created.length - mintable.length, onChain: true, txHash: hash };
+  return {
+    minted: settled.length,
+    queued: waitingForWallet,
+    onChain: true,
+    txHash: hash,
+    missingTokenIds: settled.filter((b) => !b.tokenId).length
+  };
 }
