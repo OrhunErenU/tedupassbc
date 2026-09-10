@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { EventActions } from "./actions-client";
 import { AttendeeRoleSelect } from "./attendee-role-select";
 import { AddAttendeeForm, RemoveAttendeeButton } from "./attendance-controls";
+import { CheckinQr } from "./checkin-qr";
+import { checkinWindow, checkinWindowState } from "@/lib/checkin-code";
 
 export default async function EventDetailPage({
   params
@@ -27,6 +29,9 @@ export default async function EventDetailPage({
   });
   if (!event || event.clubId !== params.id) notFound();
 
+  const window = checkinWindow(event);
+  const windowState = checkinWindowState(event);
+
   return (
     <DashboardShell
       role="Kulüp Yöneticisi"
@@ -38,28 +43,20 @@ export default async function EventDetailPage({
         <Card>
           <CardHeader>
             <CardTitle>Check-in QR</CardTitle>
-            <CardDescription>Sahnede / kapıda göster — öğrenciler telefondan tarar.</CardDescription>
+            <CardDescription>Sahnede / kapıda ekranda göster — öğrenciler telefondan tarar.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-xl border border-border bg-white p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/api/events/${event.id}/qr`}
-                alt="QR"
-                className="aspect-square w-full"
-              />
-            </div>
-            <a
-              href={`/api/events/${event.id}/qr`}
-              download={`tedupass-qr-${event.id}.png`}
-              className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-tedu px-4 text-sm font-medium text-white transition hover:bg-tedu-600"
-            >
-              QR'ı indir (PNG)
-            </a>
-            <p className="mt-3 text-xs text-muted-foreground">
-              İndirip yazdırabilir veya bir yere yapıştırabilirsin. QR sadece etkinlik{" "}
-              <code>ACTIVE</code> durumdayken işler.
-            </p>
+            <CheckinQr eventId={event.id} windowState={windowState} />
+            <dl className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
+              <div className="flex justify-between gap-2">
+                <dt>Check-in açılış</dt>
+                <dd className="font-medium text-foreground">{window.opensAt.toLocaleString("tr-TR")}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt>Check-in kapanış</dt>
+                <dd className="font-medium text-foreground">{window.closesAt.toLocaleString("tr-TR")}</dd>
+              </div>
+            </dl>
           </CardContent>
         </Card>
 

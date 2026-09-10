@@ -102,6 +102,11 @@ model Event {
   description String?
   date          DateTime
   location      String?
+  /// Check-in window. Null means "derive from date" (see lib/checkin-code.ts):
+  /// multi-day events like ETH Ankara set these explicitly.
+  checkinOpensAt  DateTime?
+  checkinClosesAt DateTime?
+  /// HMAC key behind the rotating check-in code. Never leaves the server.
   qrSecret      String      @unique
   badgeImageUrl String?     // custom badge design uploaded by the club (data URL)
   status        EventStatus @default(DRAFT)
@@ -111,6 +116,7 @@ model Event {
   club            Club             @relation(fields: [clubId], references: [id], onDelete: Cascade)
   badgeTemplates  BadgeTemplate[]
   attendances     Attendance[]
+  checkinAttempts CheckinAttempt[]
 }
 
 model BadgeTemplate {
@@ -181,4 +187,24 @@ model ShareLink {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/// Every check-in attempt, accepted or not. Backs the rate limit (an in-memory
+/// counter is useless on serverless, where each request may hit a fresh
+/// instance) and doubles as the audit trail a university will ask for when a
+/// student disputes an attendance record.
+model CheckinAttempt {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String?
+  ip        String?
+  /// Why it was rejected, or "ok". Kept short and non-personal.
+  result    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, userId, createdAt])
+  @@index([ip, createdAt])
+  @@index([createdAt])
 }

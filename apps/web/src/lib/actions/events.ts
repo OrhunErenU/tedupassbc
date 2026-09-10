@@ -36,12 +36,23 @@ const createEventSchema = z.object({
   description: z.string().max(2000).optional(),
   date: z.string().datetime(),
   location: z.string().max(200).optional(),
+  // Optional explicit check-in window. Left empty it is derived from the date
+  // (2h before to 8h after); multi-day events need to set it.
+  checkinOpensAt: z.string().datetime().optional(),
+  checkinClosesAt: z.string().datetime().optional(),
   // Optional custom badge design (data URL). Capped to keep the row small.
   badgeImageUrl: z.string().max(800_000).optional()
 });
 
 export async function createEvent(input: z.infer<typeof createEventSchema>) {
   const data = createEventSchema.parse(input);
+  if (
+    data.checkinOpensAt &&
+    data.checkinClosesAt &&
+    new Date(data.checkinClosesAt) <= new Date(data.checkinOpensAt)
+  ) {
+    throw new Error("Check-in kapanışı açılıştan sonra olmalı.");
+  }
   const user = await requireSessionUser();
 
   const membership = await prisma.clubMember.findUnique({
@@ -58,6 +69,8 @@ export async function createEvent(input: z.infer<typeof createEventSchema>) {
       description: data.description,
       date: new Date(data.date),
       location: data.location,
+      checkinOpensAt: data.checkinOpensAt ? new Date(data.checkinOpensAt) : null,
+      checkinClosesAt: data.checkinClosesAt ? new Date(data.checkinClosesAt) : null,
       badgeImageUrl: data.badgeImageUrl,
       qrSecret: randomBytes(16).toString("hex"),
       status: EventStatus.ACTIVE,

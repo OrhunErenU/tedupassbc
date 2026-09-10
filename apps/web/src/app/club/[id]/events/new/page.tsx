@@ -11,6 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { createEvent } from "@/lib/actions/events";
 import { fileToResizedDataUrl } from "@/lib/image";
 
+/** datetime-local -> ISO, boş bırakılırsa undefined (sunucu varsayılanı uygular). */
+function toIso(v: FormDataEntryValue | null): string | undefined {
+  const s = String(v ?? "").trim();
+  return s ? new Date(s).toISOString() : undefined;
+}
+
 export default function NewEventPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -39,6 +45,8 @@ export default function NewEventPage({ params }: { params: { id: string } }) {
         description: String(f.get("description") ?? "") || undefined,
         date: new Date(String(f.get("date"))).toISOString(),
         location: String(f.get("location") ?? "") || undefined,
+        checkinOpensAt: toIso(f.get("checkinOpensAt")),
+        checkinClosesAt: toIso(f.get("checkinClosesAt")),
         badgeImageUrl: badgeImage ?? undefined
       });
       router.push(`/club/${params.id}/events/${ev.id}`);
@@ -75,6 +83,24 @@ export default function NewEventPage({ params }: { params: { id: string } }) {
                 <Input id="location" name="location" placeholder="D Blok Konferans Salonu" />
               </div>
             </div>
+
+            <fieldset className="space-y-2 rounded-lg border border-border p-4">
+              <legend className="px-1 text-sm font-medium">Check-in penceresi (opsiyonel)</legend>
+              <p className="text-xs text-muted-foreground">
+                Boş bırakırsan check-in etkinlik saatinden 2 saat önce açılır, 8 saat sonra
+                kapanır. Birden çok gün süren etkinliklerde (ör. ETH Ankara) aralığı kendin gir.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="checkinOpensAt">Açılış</Label>
+                  <Input id="checkinOpensAt" name="checkinOpensAt" type="datetime-local" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="checkinClosesAt">Kapanış</Label>
+                  <Input id="checkinClosesAt" name="checkinClosesAt" type="datetime-local" />
+                </div>
+              </div>
+            </fieldset>
 
             <div className="space-y-2">
               <Label htmlFor="badge">Rozet tasarımı (opsiyonel)</Label>
