@@ -76,7 +76,13 @@ export function TranscriptDocument({
             <Field
               label="Öğrenci numarası"
               value={user.studentId ?? "—"}
-              hint={data.studentIdMasked ? "KVKK gereği maskeli" : undefined}
+              hint={
+                user.studentId
+                  ? data.studentIdMasked
+                    ? "öğrenci beyanı · KVKK gereği maskeli"
+                    : "öğrenci beyanı"
+                  : undefined
+              }
             />
           </dl>
         </div>
@@ -176,6 +182,10 @@ export function TranscriptDocument({
             <p className="mt-1">
               Her satır, etkinlik anında QR ile alınmış check-in kaydına dayanır ve elle
               düzenlenemez. Belgenin güncel halini aşağıdaki adresten teyit edebilirsiniz.
+            </p>
+            <p className="mt-1">
+              Ad ve öğrenci numarası öğrencinin kendi beyanıdır; doğrulanan kısım katılım
+              kayıtları ve topluluk görevleridir.
             </p>
             {verifyUrl ? (
               <p className="mt-2 break-all font-mono text-[11px] text-foreground">{verifyUrl}</p>

@@ -21,16 +21,20 @@ export function AddAttendeeForm({ eventId }: { eventId: string }) {
     startTransition(async () => {
       try {
         const res = await addAttendanceByEmail({ eventId, email, role });
+        if (!res.ok) {
+          setMsg({ text: res.error, error: true });
+          return;
+        }
         setEmail("");
         setMsg({
-          text: res.isNew
-            ? `${res.email} eklendi — ilk girişinde rozeti cüzdanına düşer.`
-            : `${res.name ?? res.email} eklendi.`,
+          text: res.data.isNew
+            ? `${res.data.email} eklendi — ilk girişinde rozeti cüzdanına düşer.`
+            : `${res.data.name ?? res.data.email} eklendi.`,
           error: false
         });
         router.refresh();
-      } catch (err: any) {
-        setMsg({ text: err?.message ?? "Eklenemedi.", error: true });
+      } catch {
+        setMsg({ text: "Eklenemedi.", error: true });
       }
     });
   }
@@ -94,10 +98,14 @@ export function RemoveAttendeeButton({
         setError(null);
         startTransition(async () => {
           try {
-            await removeAttendance(attendanceId);
+            const res = await removeAttendance(attendanceId);
+            if (!res.ok) {
+              setError(res.error);
+              return;
+            }
             router.refresh();
-          } catch (err: any) {
-            setError(err?.message ?? "Silinemedi.");
+          } catch {
+            setError("Silinemedi.");
           }
         });
       }}

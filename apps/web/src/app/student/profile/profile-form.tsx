@@ -41,7 +41,7 @@ export function ProfileForm({ initial }: { initial: Initial }) {
     setMsg(null);
     startTransition(async () => {
       try {
-        await updateProfile({
+        const res = await updateProfile({
           name: state.name || null,
           username: state.username || null,
           studentId: state.studentId || null,
@@ -50,10 +50,14 @@ export function ProfileForm({ initial }: { initial: Initial }) {
           avatarUrl: state.avatarUrl || null,
           isPublic: state.isPublic
         });
+        if (!res.ok) {
+          setMsg({ kind: "err", text: res.error });
+          return;
+        }
         setMsg({ kind: "ok", text: "Kaydedildi." });
         router.refresh();
-      } catch (err: any) {
-        setMsg({ kind: "err", text: err?.message ?? "Hata" });
+      } catch {
+        setMsg({ kind: "err", text: "Kaydedilemedi." });
       }
     });
   }
