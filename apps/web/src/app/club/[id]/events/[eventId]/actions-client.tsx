@@ -40,11 +40,23 @@ export function EventActions({ eventId, status }: { eventId: string; status: str
               startTransition(async () => {
                 try {
                   const res = await mintBadgesForEvent(eventId);
-                  setMsg(
-                    res.onChain
-                      ? `${res.minted} rozet zincire basıldı (${res.queued} bekliyor).`
-                      : `${res.queued} rozet kuyruğa alındı (zincir devre dışı).`
-                  );
+                  const waiting =
+                    res.queued > 0
+                      ? ` ${res.queued} rozet, sahibi ilk girişini yapıp cüzdanı oluşana kadar kuyrukta.`
+                      : "";
+                  if (!res.onChain) {
+                    setMsg(
+                      `${res.queued} rozet kuyruğa alındı — zincir yapılandırılmadığı için henüz basılmadı.`
+                    );
+                  } else if (res.minted === 0) {
+                    setMsg(`Basılacak yeni rozet yok.${waiting}`);
+                  } else {
+                    const partial =
+                      res.missingTokenIds > 0
+                        ? ` (${res.missingTokenIds} rozetin token ID'si makbuzdan okunamadı)`
+                        : "";
+                    setMsg(`${res.minted} rozet zincire basıldı${partial}.${waiting}`);
+                  }
                   router.refresh();
                 } catch (err: any) {
                   setMsg(err?.message ?? "Hata");

@@ -1,15 +1,11 @@
 // Server-side SVG generator for badge NFT images. Mirrors the visual language of
 // the <BadgeArt> React component so the on-chain tokenURI image matches the in-app art.
 
+import { BADGE_ROLE_LABEL } from "@/lib/roles";
+
 type Theme = { from: string; to: string; glyph: string };
 
-const ROLE_LABEL: Record<string, string> = {
-  ATTENDEE: "Katılımcı",
-  ORGANIZER: "Organizatör",
-  SPEAKER: "Konuşmacı",
-  MENTOR: "Mentor",
-  VOLUNTEER: "Gönüllü"
-};
+const ROLE_LABEL: Record<string, string> = BADGE_ROLE_LABEL;
 
 const ROLE_THEME: Record<string, Theme> = {
   ORGANIZER: { from: "#E11332", to: "#820A1E", glyph: "M3 7h18M3 12h18M3 17h12" },

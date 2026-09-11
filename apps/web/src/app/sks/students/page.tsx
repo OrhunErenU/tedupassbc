@@ -136,7 +136,7 @@ export default async function SksStudentsPage({
                       </td>
                       <td>
                         <Link
-                          href={`/transkript/${u.id}`}
+                          href={`/sks/students/${u.id}/transkript`}
                           className="inline-flex items-center gap-1 text-xs text-tedu hover:underline"
                         >
                           <FileText className="h-3.5 w-3.5" />

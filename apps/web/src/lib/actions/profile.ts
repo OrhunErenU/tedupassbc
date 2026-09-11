@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma, ClubMemberRole, ClubMemberStatus } from "@tedu-pass/db";
 import { requireSessionUser } from "@/lib/auth";
+import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 
 const profileSchema = z.object({
   name: z.string().min(1).max(80).optional().nullable(),
@@ -21,7 +22,7 @@ const profileSchema = z.object({
   isPublic: z.boolean()
 });
 
-export async function updateProfile(input: z.infer<typeof profileSchema>) {
+export async function updateProfile(input: z.infer<typeof profileSchema>): Promise<ActionResult> {
   const data = profileSchema.parse(input);
   const user = await requireSessionUser();
 
@@ -29,7 +30,20 @@ export async function updateProfile(input: z.infer<typeof profileSchema>) {
     const taken = await prisma.user.findFirst({
       where: { username: data.username, NOT: { id: user.id } }
     });
-    if (taken) throw new Error("Bu kullanıcı adı alınmış.");
+    if (taken) return actionError("Bu kullanıcı adı alınmış.");
+  }
+
+  // studentId is unique in the schema. Without this check a collision surfaced
+  // as an unhandled Prisma error — a bare 500 with no explanation.
+  if (data.studentId) {
+    const taken = await prisma.user.findFirst({
+      where: { studentId: data.studentId, NOT: { id: user.id } }
+    });
+    if (taken) {
+      return actionError(
+        "Bu öğrenci numarası başka bir hesapta kayıtlı. Kendi numaranı girdiğinden eminsen SKS ile iletişime geç."
+      );
+    }
   }
 
   await prisma.user.update({
@@ -49,6 +63,7 @@ export async function updateProfile(input: z.infer<typeof profileSchema>) {
   revalidatePath("/student");
   revalidatePath("/student/profile");
   if (data.username) revalidatePath(`/u/${data.username}`);
+  return actionOk();
 }
 
 const claimSchema = z.object({
