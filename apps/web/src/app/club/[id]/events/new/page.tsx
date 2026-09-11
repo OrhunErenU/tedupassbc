@@ -49,9 +49,14 @@ export default function NewEventPage({ params }: { params: { id: string } }) {
         checkinClosesAt: toIso(f.get("checkinClosesAt")),
         badgeImageUrl: badgeImage ?? undefined
       });
-      router.push(`/club/${params.id}/events/${ev.id}`);
-    } catch (err: any) {
-      setError(err?.message ?? "Hata");
+      if (!ev.ok) {
+        setError(ev.error);
+        setBusy(false);
+        return;
+      }
+      router.push(`/club/${params.id}/events/${ev.data.id}`);
+    } catch {
+      setError("Etkinlik oluşturulamadı.");
       setBusy(false);
     }
   }

@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { prisma, EventStatus, BadgeRole } from "@tedu-pass/db";
 import { requireSessionUser } from "@/lib/auth";
+import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { parseEventLogs, zeroHash, type Hex } from "viem";
 import { buildBadgeMetadata, metadataContentHash } from "@/lib/metadata";
 import { pinBadgeMetadata } from "@/lib/ipfs";
@@ -45,14 +46,16 @@ const createEventSchema = z.object({
   badgeImageUrl: z.string().max(800_000).optional()
 });
 
-export async function createEvent(input: z.infer<typeof createEventSchema>) {
+export async function createEvent(
+  input: z.infer<typeof createEventSchema>
+): Promise<ActionResult<{ id: string }>> {
   const data = createEventSchema.parse(input);
   if (
     data.checkinOpensAt &&
     data.checkinClosesAt &&
     new Date(data.checkinClosesAt) <= new Date(data.checkinOpensAt)
   ) {
-    throw new Error("Check-in kapanışı açılıştan sonra olmalı.");
+    return actionError("Check-in kapanışı açılıştan sonra olmalı.");
   }
   const user = await requireSessionUser();
 
@@ -61,6 +64,17 @@ export async function createEvent(input: z.infer<typeof createEventSchema>) {
   });
   if (!membership || membership.role === "MEMBER") {
     throw new Error("Bu kulüpte yönetici değilsin.");
+  }
+
+  // The SKS panel states that unapproved clubs cannot hold events, but nothing
+  // enforced it: a pending club could run an event and collect attendance that
+  // SKS would then destroy by declining the application.
+  const club = await prisma.club.findUnique({ where: { id: data.clubId } });
+  if (!club) return actionError("Kulüp bulunamadı.");
+  if (!club.approvedBySks) {
+    return actionError(
+      "Kulüp SKS onayı almadan etkinlik oluşturamaz. Onay bekleyen kulüpler için SKS ile iletişime geç."
+    );
   }
 
   const event = await prisma.event.create({
@@ -83,7 +97,7 @@ export async function createEvent(input: z.infer<typeof createEventSchema>) {
     }
   });
 
-  return { id: event.id };
+  return actionOk({ id: event.id });
 }
 
 export async function closeEvent(eventId: string) {
