@@ -4,11 +4,19 @@
  * Next.js strips the message from any error a server action *throws* in a
  * production build and sends the client only an opaque digest — so guidance
  * like "Sadece @tedu.edu.tr adresleri eklenebilir" never reaches the person who
- * needs it. Returned values are not stripped, so expected failures (validation,
- * a refused operation we want to explain) come back as data.
+ * needs it. Returned values are not stripped, so expected failures come back as
+ * data.
  *
- * Throwing is still right for the unexpected: a missing session, a caller with
- * no business calling at all, a database that is down.
+ * Where the line sits:
+ *
+ * - **Return an actionError** for anything the user can act on: validation, a
+ *   duplicate, a limit, a state they must change first ("önce etkinliği kapat"),
+ *   a chain transaction that reverted. They need to read it to know what to do.
+ *
+ * - **Throw** for permission and session failures — no session, not a manager of
+ *   this club, wrong role. The UI never offers those controls in the first place,
+ *   so a caller hitting them is either a stale page or someone probing; an opaque
+ *   error is the right answer and we do not enumerate our permission rules to them.
  */
 export type ActionResult<T = undefined> =
   | ({ ok: true } & (T extends undefined ? { data?: undefined } : { data: T }))

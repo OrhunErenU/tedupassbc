@@ -7,6 +7,11 @@ import { requireSessionUser, ALLOWED_EMAIL_DOMAIN } from "@/lib/auth";
 import { BADGE_ROLES, badgeRoleLabel } from "@/lib/roles";
 import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 
+/**
+ * Permission guard: throws rather than returning an error, per lib/action-result.
+ * The panel is only reachable by managers, so a caller hitting this is a stale
+ * page or a prober — neither needs to be told our rules.
+ */
 async function requireClubManager(clubId: string, userId: string) {
   const m = await prisma.clubMember.findUnique({
     where: { userId_clubId: { userId, clubId } }
@@ -18,23 +23,48 @@ async function requireClubManager(clubId: string, userId: string) {
 }
 
 /** Club manager confirms a student's self-declared role → it becomes verified. */
-export async function approveMembership(targetUserId: string, clubId: string) {
+export async function approveMembership(
+  targetUserId: string,
+  clubId: string
+): Promise<ActionResult> {
   const user = await requireSessionUser();
   await requireClubManager(clubId, user.id);
+
+  const claim = await prisma.clubMember.findUnique({
+    where: { userId_clubId: { userId: targetUserId, clubId } }
+  });
+  if (!claim) return actionError("Bu başvuru artık yok — sayfayı yenile.");
+
   await prisma.clubMember.update({
     where: { userId_clubId: { userId: targetUserId, clubId } },
     data: { status: ClubMemberStatus.APPROVED }
   });
   revalidatePath(`/club/${clubId}`);
+  return actionOk();
 }
 
-export async function rejectMembership(targetUserId: string, clubId: string) {
+export async function rejectMembership(
+  targetUserId: string,
+  clubId: string
+): Promise<ActionResult> {
   const user = await requireSessionUser();
   await requireClubManager(clubId, user.id);
+
+  const claim = await prisma.clubMember.findUnique({
+    where: { userId_clubId: { userId: targetUserId, clubId } }
+  });
+  if (!claim) return actionError("Bu başvuru artık yok — sayfayı yenile.");
+  // Only a pending self-claim is a "başvuru". Deleting an approved membership
+  // here would quietly strip a verified role off the student's CV profile.
+  if (claim.status === ClubMemberStatus.APPROVED) {
+    return actionError("Bu görev zaten onaylanmış; buradan reddedilemez.");
+  }
+
   await prisma.clubMember.delete({
     where: { userId_clubId: { userId: targetUserId, clubId } }
   });
   revalidatePath(`/club/${clubId}`);
+  return actionOk();
 }
 
 const createClubSchema = z.object({
@@ -42,12 +72,14 @@ const createClubSchema = z.object({
   description: z.string().max(2000).optional()
 });
 
-export async function createClub(input: z.infer<typeof createClubSchema>) {
+export async function createClub(
+  input: z.infer<typeof createClubSchema>
+): Promise<ActionResult<{ id: string }>> {
   const data = createClubSchema.parse(input);
   const user = await requireSessionUser();
 
   const existing = await prisma.club.findUnique({ where: { name: data.name } });
-  if (existing) throw new Error("Bu isimde bir kulüp zaten var.");
+  if (existing) return actionError("Bu isimde bir kulüp zaten var.");
 
   const club = await prisma.club.create({
     data: {
@@ -63,7 +95,7 @@ export async function createClub(input: z.infer<typeof createClubSchema>) {
 
   revalidatePath("/club");
   revalidatePath("/sks");
-  return { id: club.id };
+  return actionOk({ id: club.id });
 }
 
 const promoteSchema = z.object({
@@ -71,7 +103,9 @@ const promoteSchema = z.object({
   role: z.enum(BADGE_ROLES)
 });
 
-export async function setAttendanceRole(input: z.infer<typeof promoteSchema>) {
+export async function setAttendanceRole(
+  input: z.infer<typeof promoteSchema>
+): Promise<ActionResult> {
   const { attendanceId, role } = promoteSchema.parse(input);
   const user = await requireSessionUser();
 
@@ -79,12 +113,9 @@ export async function setAttendanceRole(input: z.infer<typeof promoteSchema>) {
     where: { id: attendanceId },
     include: { event: true }
   });
-  if (!att) throw new Error("Katılım bulunamadı.");
+  if (!att) return actionError("Katılım bulunamadı.");
 
-  const membership = await prisma.clubMember.findUnique({
-    where: { userId_clubId: { userId: user.id, clubId: att.event.clubId } }
-  });
-  if (!membership || membership.role === "MEMBER") throw new Error("Yetki yok.");
+  await requireClubManager(att.event.clubId, user.id);
 
   await prisma.$transaction(async (tx) => {
     await tx.attendance.update({ where: { id: attendanceId }, data: { role: role as BadgeRole } });
@@ -101,12 +132,16 @@ export async function setAttendanceRole(input: z.infer<typeof promoteSchema>) {
   });
 
   revalidatePath(`/club/${att.event.clubId}/events/${att.eventId}`);
+  return actionOk();
 }
 
-/** Manager check that starts from an event instead of a club id. */
+/**
+ * Manager check that starts from an event instead of a club id. Returns null for
+ * a missing event so the caller can say so; a permission failure still throws.
+ */
 async function requireEventManager(eventId: string, userId: string) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
-  if (!event) throw new Error("Etkinlik bulunamadı.");
+  if (!event) return null;
   await requireClubManager(event.clubId, userId);
   return event;
 }
@@ -130,6 +165,7 @@ export async function addAttendanceByEmail(
   const data = addAttendanceSchema.parse(input);
   const user = await requireSessionUser();
   const event = await requireEventManager(data.eventId, user.id);
+  if (!event) return actionError("Etkinlik bulunamadı.");
 
   const email = data.email.trim().toLowerCase();
   if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {

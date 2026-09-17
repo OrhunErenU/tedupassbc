@@ -64,11 +64,15 @@ export function ShareLinks({ links, appUrl }: { links: ShareLinkRow[]; appUrl: s
           expiresInDays: days,
           revealStudentId: reveal
         });
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
         setLabel("");
-        await copy(res.token);
+        await copy(res.data.token);
         router.refresh();
-      } catch (err: any) {
-        setError(err?.message ?? "Bağlantı oluşturulamadı.");
+      } catch {
+        setError("Bağlantı oluşturulamadı.");
       }
     });
   }
@@ -180,9 +184,18 @@ export function ShareLinks({ links, appUrl }: { links: ShareLinkRow[]; appUrl: s
                           disabled={pending}
                           onClick={() => {
                             if (!window.confirm("Bu bağlantı iptal edilsin mi? Erişimi olan herkes belgeyi göremez olur.")) return;
+                            setError(null);
                             startTransition(async () => {
-                              await revokeShareLink(l.id);
-                              router.refresh();
+                              try {
+                                const res = await revokeShareLink(l.id);
+                                if (!res.ok) {
+                                  setError(res.error);
+                                  return;
+                                }
+                                router.refresh();
+                              } catch {
+                                setError("Bağlantı iptal edilemedi.");
+                              }
                             });
                           }}
                         >

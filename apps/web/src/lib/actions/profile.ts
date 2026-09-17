@@ -76,19 +76,21 @@ const claimSchema = z.object({
  * Student self-declares a role/task in a community. Created as PENDING so the
  * club must confirm it — only confirmed roles show as verified on the CV profile.
  */
-export async function claimMembership(input: z.infer<typeof claimSchema>) {
+export async function claimMembership(
+  input: z.infer<typeof claimSchema>
+): Promise<ActionResult> {
   const { clubId, role, title } = claimSchema.parse(input);
   const user = await requireSessionUser();
 
   const club = await prisma.club.findUnique({ where: { id: clubId } });
-  if (!club) throw new Error("Topluluk bulunamadı.");
+  if (!club) return actionError("Topluluk bulunamadı.");
 
   const existing = await prisma.clubMember.findUnique({
     where: { userId_clubId: { userId: user.id, clubId } }
   });
   // Don't let a self-claim silently downgrade an already-approved membership.
   if (existing?.status === ClubMemberStatus.APPROVED) {
-    throw new Error("Bu toplulukta zaten onaylı bir görevin var.");
+    return actionError("Bu toplulukta zaten onaylı bir görevin var.");
   }
 
   await prisma.clubMember.upsert({
@@ -104,10 +106,12 @@ export async function claimMembership(input: z.infer<typeof claimSchema>) {
   });
 
   revalidatePath("/student/profile");
+  return actionOk();
 }
 
-export async function removeMembership(clubId: string) {
+export async function removeMembership(clubId: string): Promise<ActionResult> {
   const user = await requireSessionUser();
   await prisma.clubMember.deleteMany({ where: { userId: user.id, clubId } });
   revalidatePath("/student/profile");
+  return actionOk();
 }

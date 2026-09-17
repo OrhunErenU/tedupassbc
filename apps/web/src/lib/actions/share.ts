@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@tedu-pass/db";
 import { requireSessionUser } from "@/lib/auth";
 import { newShareToken } from "@/lib/share";
+import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 
 const createSchema = z.object({
   label: z.string().max(80).optional(),
@@ -14,13 +15,17 @@ const createSchema = z.object({
 });
 
 /** Students hand out one link per recipient so they can revoke them separately. */
-export async function createShareLink(input: z.infer<typeof createSchema>) {
+export async function createShareLink(
+  input: z.infer<typeof createSchema>
+): Promise<ActionResult<{ token: string }>> {
   const data = createSchema.parse(input);
   const user = await requireSessionUser();
 
   const open = await prisma.shareLink.count({ where: { userId: user.id, revokedAt: null } });
   if (open >= 20) {
-    throw new Error("Aynı anda en fazla 20 açık paylaşım bağlantın olabilir. Kullanmadıklarını iptal et.");
+    return actionError(
+      "Aynı anda en fazla 20 açık paylaşım bağlantın olabilir. Kullanmadıklarını iptal et."
+    );
   }
 
   const link = await prisma.shareLink.create({
@@ -37,16 +42,19 @@ export async function createShareLink(input: z.infer<typeof createSchema>) {
   });
 
   revalidatePath("/student/transkript");
-  return { token: link.token };
+  return actionOk({ token: link.token });
 }
 
 /** Revoking is immediate: the next request on that token gets the "revoked" page. */
-export async function revokeShareLink(linkId: string) {
+export async function revokeShareLink(linkId: string): Promise<ActionResult> {
   const user = await requireSessionUser();
   const link = await prisma.shareLink.findUnique({ where: { id: linkId } });
-  if (!link || link.userId !== user.id) throw new Error("Bağlantı bulunamadı.");
-  if (link.revokedAt) return;
+  // Someone else's link is reported the same as a missing one: a stale page should
+  // not be able to probe which ids exist.
+  if (!link || link.userId !== user.id) return actionError("Bağlantı bulunamadı.");
+  if (link.revokedAt) return actionOk();
 
   await prisma.shareLink.update({ where: { id: linkId }, data: { revokedAt: new Date() } });
   revalidatePath("/student/transkript");
+  return actionOk();
 }

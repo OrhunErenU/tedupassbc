@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { prisma, EventStatus, BadgeRole } from "@tedu-pass/db";
@@ -27,6 +28,20 @@ export type MintResult = {
   /** Minted but the receipt carried no BadgeMinted log for them (should be 0). */
   missingTokenIds: number;
 };
+
+/**
+ * Permission guard for club-scoped event actions. Throws (see lib/action-result):
+ * these controls only exist inside the club panel.
+ */
+async function requireEventManager(clubId: string, userId: string) {
+  const membership = await prisma.clubMember.findUnique({
+    where: { userId_clubId: { userId, clubId } }
+  });
+  if (!membership || membership.role === "MEMBER") {
+    throw new Error("Bu kulüpte yönetici değilsin.");
+  }
+  return membership;
+}
 
 function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? "";
@@ -59,12 +74,7 @@ export async function createEvent(
   }
   const user = await requireSessionUser();
 
-  const membership = await prisma.clubMember.findUnique({
-    where: { userId_clubId: { userId: user.id, clubId: data.clubId } }
-  });
-  if (!membership || membership.role === "MEMBER") {
-    throw new Error("Bu kulüpte yönetici değilsin.");
-  }
+  await requireEventManager(data.clubId, user.id);
 
   // The SKS panel states that unapproved clubs cannot hold events, but nothing
   // enforced it: a pending club could run an event and collect attendance that
@@ -100,20 +110,17 @@ export async function createEvent(
   return actionOk({ id: event.id });
 }
 
-export async function closeEvent(eventId: string) {
+export async function closeEvent(eventId: string): Promise<ActionResult> {
   const user = await requireSessionUser();
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: { club: true }
-  });
-  if (!event) throw new Error("Etkinlik bulunamadı.");
-  const membership = await prisma.clubMember.findUnique({
-    where: { userId_clubId: { userId: user.id, clubId: event.clubId } }
-  });
-  if (!membership || membership.role === "MEMBER") {
-    throw new Error("Yetki yok.");
-  }
+  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  if (!event) return actionError("Etkinlik bulunamadı.");
+  await requireEventManager(event.clubId, user.id);
+
+  if (event.status === EventStatus.CLOSED) return actionOk();
+
   await prisma.event.update({ where: { id: eventId }, data: { status: EventStatus.CLOSED } });
+  revalidatePath(`/club/${event.clubId}/events/${eventId}`);
+  return actionOk();
 }
 
 /**
@@ -125,7 +132,7 @@ export async function closeEvent(eventId: string) {
  * So badge rows are created in one transaction, minted, then settled in another.
  * Nothing is marked minted until the receipt confirms the transaction succeeded.
  */
-export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
+export async function mintBadgesForEvent(eventId: string): Promise<ActionResult<MintResult>> {
   const user = await requireSessionUser();
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -134,13 +141,11 @@ export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
       attendances: { include: { user: true } }
     }
   });
-  if (!event) throw new Error("Etkinlik bulunamadı.");
-  if (event.status !== EventStatus.CLOSED) throw new Error("Önce etkinliği kapat.");
-
-  const membership = await prisma.clubMember.findUnique({
-    where: { userId_clubId: { userId: user.id, clubId: event.clubId } }
-  });
-  if (!membership || membership.role === "MEMBER") throw new Error("Yetki yok.");
+  if (!event) return actionError("Etkinlik bulunamadı.");
+  await requireEventManager(event.clubId, user.id);
+  if (event.status !== EventStatus.CLOSED) {
+    return actionError("Rozetleri basmadan önce etkinliği kapatmalısın.");
+  }
 
   // 1. Make sure every attendee has a Badge row. The row id is what we hash into
   //    badgeRef, so it has to exist before we can mint.
@@ -161,7 +166,7 @@ export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
   });
 
   if (!chainConfigured() || !serverWallet || !TEDU_PASS_ADDRESS) {
-    return { minted: 0, queued: pending.length, onChain: false, missingTokenIds: 0 };
+    return actionOk({ minted: 0, queued: pending.length, onChain: false, missingTokenIds: 0 });
   }
 
   // Students who have never signed in have no wallet yet; their badge stays queued
@@ -169,7 +174,7 @@ export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
   const mintable = pending.filter((c) => c.wallet);
   const waitingForWallet = pending.length - mintable.length;
   if (mintable.length === 0) {
-    return { minted: 0, queued: waitingForWallet, onChain: true, missingTokenIds: 0 };
+    return actionOk({ minted: 0, queued: waitingForWallet, onChain: true, missingTokenIds: 0 });
   }
 
   const refs = mintable.map((c) => badgeRef(c.id));
@@ -204,7 +209,9 @@ export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 120_000 });
   if (receipt.status !== "success") {
-    throw new Error(`Zincir işlemi başarısız (${hash}). Rozetler basılmadı, tekrar deneyebilirsin.`);
+    return actionError(
+      `Zincir işlemi başarısız (${hash}). Hiçbir rozet basılmadı, tekrar deneyebilirsin.`
+    );
   }
 
   // 3. Read each badge's tokenId out of the receipt logs. batchMint assigns ids
@@ -233,11 +240,11 @@ export async function mintBadgesForEvent(eventId: string): Promise<MintResult> {
     )
   );
 
-  return {
+  return actionOk({
     minted: settled.length,
     queued: waitingForWallet,
     onChain: true,
     txHash: hash,
     missingTokenIds: settled.filter((b) => !b.tokenId).length
-  };
+  });
 }

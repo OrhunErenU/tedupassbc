@@ -24,9 +24,17 @@ export function EventActions({ eventId, status }: { eventId: string; status: str
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
-                await closeEvent(eventId);
-                setMsg("Etkinlik kapatıldı.");
-                router.refresh();
+                try {
+                  const res = await closeEvent(eventId);
+                  if (!res.ok) {
+                    setMsg(res.error);
+                    return;
+                  }
+                  setMsg("Etkinlik kapatıldı.");
+                  router.refresh();
+                } catch {
+                  setMsg("Etkinlik kapatılamadı.");
+                }
               })
             }
           >
@@ -40,26 +48,31 @@ export function EventActions({ eventId, status }: { eventId: string; status: str
               startTransition(async () => {
                 try {
                   const res = await mintBadgesForEvent(eventId);
+                  if (!res.ok) {
+                    setMsg(res.error);
+                    return;
+                  }
+                  const r = res.data;
                   const waiting =
-                    res.queued > 0
-                      ? ` ${res.queued} rozet, sahibi ilk girişini yapıp cüzdanı oluşana kadar kuyrukta.`
+                    r.queued > 0
+                      ? ` ${r.queued} rozet, sahibi ilk girişini yapıp cüzdanı oluşana kadar kuyrukta.`
                       : "";
-                  if (!res.onChain) {
+                  if (!r.onChain) {
                     setMsg(
-                      `${res.queued} rozet kuyruğa alındı — zincir yapılandırılmadığı için henüz basılmadı.`
+                      `${r.queued} rozet kuyruğa alındı — zincir yapılandırılmadığı için henüz basılmadı.`
                     );
-                  } else if (res.minted === 0) {
+                  } else if (r.minted === 0) {
                     setMsg(`Basılacak yeni rozet yok.${waiting}`);
                   } else {
                     const partial =
-                      res.missingTokenIds > 0
-                        ? ` (${res.missingTokenIds} rozetin token ID'si makbuzdan okunamadı)`
+                      r.missingTokenIds > 0
+                        ? ` (${r.missingTokenIds} rozetin token ID'si makbuzdan okunamadı)`
                         : "";
-                    setMsg(`${res.minted} rozet zincire basıldı${partial}.${waiting}`);
+                    setMsg(`${r.minted} rozet zincire basıldı${partial}.${waiting}`);
                   }
                   router.refresh();
-                } catch (err: any) {
-                  setMsg(err?.message ?? "Hata");
+                } catch {
+                  setMsg("Rozetler basılamadı.");
                 }
               })
             }
