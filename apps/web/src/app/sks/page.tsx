@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { DocumentHeader } from "@/components/document-header";
 import { getSksSummary } from "@/lib/sks-stats";
 import { requirePageRole } from "@/lib/auth";
+import { ChainStatusBanner } from "@/components/chain-status-banner";
 import { UserRole } from "@tedu-pass/db";
 import { Trophy, Users, CalendarCheck, Building2 } from "lucide-react";
 import { ApproveClubButtons } from "./clubs-actions";
@@ -20,6 +21,7 @@ export default async function SksDashboardPage() {
       title="SKS Dashboard"
       description="TED Üniversitesi kulüp ekosisteminin canlı özeti."
     >
+      <ChainStatusBanner />
       <DocumentHeader
         caption="SKS · Kurumsal Özet"
         serial="REPORT-001"

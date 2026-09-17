@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma, EventStatus, UserRole } from "@tedu-pass/db";
+import { prisma, EventStatus } from "@tedu-pass/db";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { safeQuery } from "@/lib/safe-db";
-import { requirePageRole } from "@/lib/auth";
+import { requireClubManagerPage } from "@/lib/auth";
 import { MembershipReview } from "./membership-review";
 
 const ROLE_LABEL: Record<string, string> = { PRESIDENT: "Başkan", BOARD: "Yönetim Kurulu", MEMBER: "Üye" };
 
 export default async function ClubDetailPage({ params }: { params: { id: string } }) {
-  await requirePageRole([UserRole.CLUB_ADMIN, UserRole.SKS_ADMIN]);
+  // Guard here, not only in the layout: a layout redirect does not stop the page
+  // from rendering in parallel, and Next.js ships that render in the 307 body.
+  await requireClubManagerPage(params.id);
   const club = await safeQuery(
     () =>
       prisma.club.findUnique({

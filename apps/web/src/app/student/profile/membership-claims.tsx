@@ -45,13 +45,17 @@ export function MembershipClaims({
     }
     startTransition(async () => {
       try {
-        await claimMembership({ clubId, role: role as any, title: title || undefined });
+        const res = await claimMembership({ clubId, role: role as any, title: title || undefined });
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
         setTitle("");
         setClubId("");
         setRole("MEMBER");
         router.refresh();
-      } catch (err: any) {
-        setError(err?.message ?? "Hata");
+      } catch {
+        setError("Görev eklenemedi.");
       }
     });
   }
@@ -79,7 +83,21 @@ export function MembershipClaims({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => startTransition(async () => { await removeMembership(m.clubId); router.refresh(); })}
+                onClick={() =>
+                  startTransition(async () => {
+                    setError(null);
+                    try {
+                      const res = await removeMembership(m.clubId);
+                      if (!res.ok) {
+                        setError(res.error);
+                        return;
+                      }
+                      router.refresh();
+                    } catch {
+                      setError("Görev kaldırılamadı.");
+                    }
+                  })
+                }
                 className="shrink-0 text-xs text-destructive hover:underline"
               >
                 Kaldır

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { safeQuery } from "@/lib/safe-db";
 import { requirePageRole } from "@/lib/auth";
-import { ApproveClubButtons } from "../clubs-actions";
+import { ApproveClubButtons, RevokeClubButton } from "../clubs-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +35,10 @@ export default async function SksClubsPage() {
               <Badge variant="success">{clubs.filter((c) => c.approvedBySks).length} onaylı</Badge>
             </div>
           </div>
-          <CardDescription>Onay verilmemiş kulüpler etkinlik oluşturamaz.</CardDescription>
+          <CardDescription>
+            Onay verilmemiş kulüpler etkinlik oluşturamaz. Etkinlik yapmış bir kulüp silinemez —
+            onayı geri alınır, geçmişi korunur.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {clubs.length === 0 ? (
@@ -81,7 +84,11 @@ export default async function SksClubsPage() {
                           )}
                         </td>
                         <td className="text-right">
-                          {!c.approvedBySks ? <ApproveClubButtons clubId={c.id} /> : null}
+                          {c.approvedBySks ? (
+                            <RevokeClubButton clubId={c.id} />
+                          ) : (
+                            <ApproveClubButtons clubId={c.id} />
+                          )}
                         </td>
                       </tr>
                     );

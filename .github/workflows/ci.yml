@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The build only needs a syntactically valid URL — no migrations are run and
+  # no page in the build is allowed to depend on a live database.
+  DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/tedu_pass?schema=public
+  DIRECT_URL: postgresql://placeholder:placeholder@localhost:5432/tedu_pass?schema=public
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  web:
+    name: Web (typecheck, lint, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Typecheck
+        run: pnpm --filter @tedu-pass/web typecheck
+
+      - name: Lint
+        run: pnpm --filter @tedu-pass/web lint
+
+      - name: Build
+        run: pnpm build
+
+      # Guards the one flag that would hand anyone any account in production.
+      - name: DEV_LOGIN production guard
+        run: node scripts/check-dev-login.mjs
+
+  migrations:
+    name: Migrations apply cleanly
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tedu_pass
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tedu_pass?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tedu_pass?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Catches a migration that was hand-edited or never applied end to end.
+      - name: Apply migrations from scratch
+        run: pnpm --filter @tedu-pass/db exec prisma migrate deploy
+
+      # Fails if schema.prisma has drifted away from the migration history.
+      - name: Schema matches migrations
+        run: pnpm --filter @tedu-pass/db exec prisma migrate diff
+          --from-migrations prisma/migrations
+          --to-schema-datamodel prisma/schema.prisma
+          --shadow-database-url "$DATABASE_URL"
+          --exit-code
+
+  contracts:
+    name: Contracts (compile, test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Compile
+        run: pnpm --filter @tedu-pass/contracts compile
+      - name: Test
+        run: pnpm --filter @tedu-pass/contracts test

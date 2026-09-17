@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma, UserRole } from "@tedu-pass/db";
 import { privyServer } from "./privy-server";
+import { devLoginEnabled } from "./dev-login";
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN ?? "tedu.edu.tr").toLowerCase();
 const COOKIE = process.env.SESSION_COOKIE_NAME ?? "tedu_pass_session";
@@ -38,25 +39,40 @@ export type SessionUser = {
  * Verifies the Privy access token from the request and returns the matching DB user.
  * Returns null if no valid session or no DB user yet.
  */
-const DEV_LOGIN = process.env.DEV_LOGIN === "1";
+// Never simply `DEV_LOGIN === "1"`: see lib/dev-login.ts — a production
+// deployment refuses impersonation even if the flag is set.
+const DEV_LOGIN = devLoginEnabled();
+
+/**
+ * Resolve the impersonated user from the dev cookie.
+ *
+ * Only ever called behind devLoginEnabled(). The cookie is unsigned — it says
+ * nothing but an e-mail address — so honouring it anywhere else would let a
+ * caller hand-write a cookie and become any user.
+ */
+async function devSessionUser(): Promise<SessionUser | null> {
+  const devEmail = cookies().get("dev_user")?.value;
+  if (!devEmail) return null;
+  const user = await prisma.user.findUnique({ where: { teduEmail: devEmail } });
+  return user ?? null;
+}
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  // Local demo / development impersonation. Strictly gated behind DEV_LOGIN=1,
-  // which must never be set in production. Lets the team demo seeded users
-  // without a live Privy email round-trip.
+  // Local demo / development impersonation, gated by lib/dev-login.ts: DEV_LOGIN=1
+  // *and* a non-production deployment. Lets the team demo seeded users without a
+  // live Privy email round-trip.
   if (DEV_LOGIN) {
-    const devEmail = cookies().get("dev_user")?.value;
-    if (devEmail) {
-      const user = await prisma.user.findUnique({ where: { teduEmail: devEmail } });
-      if (user) return user;
-    }
+    const user = await devSessionUser();
+    if (user) return user;
   }
 
   if (!privyServer) {
-    const devEmail = cookies().get("dev_user")?.value;
-    if (!devEmail) return null;
-    const user = await prisma.user.findUnique({ where: { teduEmail: devEmail } });
-    return user ?? null;
+    // Privy is not configured, so there is no real session to verify. This used
+    // to fall back to the dev cookie regardless of DEV_LOGIN, which meant a
+    // production deploy with Privy misconfigured would authenticate anyone who
+    // sent a hand-written dev_user cookie. Now it is the same gate as above:
+    // no dev login, no session.
+    return DEV_LOGIN ? await devSessionUser() : null;
   }
 
   const token = cookies().get(COOKIE)?.value;
@@ -114,8 +130,38 @@ export async function requireRole(roles: UserRole[]): Promise<SessionUser> {
  */
 export async function requirePageRole(roles: UserRole[], to = "/"): Promise<SessionUser | null> {
   const u = await getSessionUser().catch(() => null);
-  if (DEV_LOGIN && !u) return null; // dev: client shell handles redirect to /dev
+  // Dev demo mode still needs a session. Letting the client shell do the
+  // redirecting means the panel renders first and ships real student data to an
+  // unauthenticated request, so send them to the impersonation switcher here.
+  if (DEV_LOGIN && !u) redirect("/dev");
   if (!u || !roles.includes(u.role)) redirect(to);
+  return u;
+}
+
+/**
+ * Server-component guard for anything under /club/[id].
+ *
+ * requirePageRole only checks the *global* role, so a club admin could open a
+ * club they have nothing to do with and read its attendee list. This checks
+ * membership in that specific club: you must be an approved PRESIDENT/BOARD
+ * member of it. SKS staff keep read access — university-wide oversight is their job.
+ */
+export async function requireClubManagerPage(
+  clubId: string,
+  to = "/club"
+): Promise<SessionUser | null> {
+  const u = await getSessionUser().catch(() => null);
+  if (DEV_LOGIN && !u) redirect("/dev");
+  if (!u) redirect("/");
+  if (u.role === UserRole.SKS_ADMIN) return u;
+  if (u.role !== UserRole.CLUB_ADMIN) redirect("/");
+
+  const membership = await prisma.clubMember
+    .findUnique({ where: { userId_clubId: { userId: u.id, clubId } } })
+    .catch(() => null);
+  if (!membership || membership.status !== "APPROVED" || membership.role === "MEMBER") {
+    redirect(to);
+  }
   return u;
 }
 

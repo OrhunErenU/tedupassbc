@@ -63,6 +63,7 @@ model User {
   memberships ClubMember[]
   attendances Attendance[]
   badges      Badge[]
+  shareLinks  ShareLink[]
 }
 
 model Club {
@@ -101,6 +102,11 @@ model Event {
   description String?
   date          DateTime
   location      String?
+  /// Check-in window. Null means "derive from date" (see lib/checkin-code.ts):
+  /// multi-day events like ETH Ankara set these explicitly.
+  checkinOpensAt  DateTime?
+  checkinClosesAt DateTime?
+  /// HMAC key behind the rotating check-in code. Never leaves the server.
   qrSecret      String      @unique
   badgeImageUrl String?     // custom badge design uploaded by the club (data URL)
   status        EventStatus @default(DRAFT)
@@ -110,6 +116,7 @@ model Event {
   club            Club             @relation(fields: [clubId], references: [id], onDelete: Cascade)
   badgeTemplates  BadgeTemplate[]
   attendances     Attendance[]
+  checkinAttempts CheckinAttempt[]
 }
 
 model BadgeTemplate {
@@ -144,7 +151,10 @@ model Badge {
   badgeTemplateId String
   userId          String
   tokenId         String?  @unique
-  txHash          String?  @unique
+  // NOT unique: batchMint settles every badge of an event in one transaction, so
+  // a whole cohort legitimately shares one txHash. A unique constraint here made
+  // the second badge of any batch fail to record its mint.
+  txHash          String?
   mintedAt        DateTime?
   createdAt       DateTime @default(now())
 
@@ -152,4 +162,49 @@ model Badge {
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([badgeTemplateId, userId])
+  @@index([txHash])
+}
+
+/// A revocable, expiring capability to view one student's transcript without
+/// signing in. The transcript used to be addressed by the student's own user id,
+/// which meant the URL could never be withdrawn and any leaked id exposed the
+/// document. A token decouples the two: the student can hand one out per
+/// employer and revoke it later.
+model ShareLink {
+  id     String @id @default(cuid())
+  token  String @unique
+  userId String
+  /// Student's own note, e.g. "Erasmus başvurusu".
+  label  String?
+  /// Student numbers stay masked unless the student opts in for this link.
+  revealStudentId Boolean @default(false)
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+  revokedAt    DateTime?
+  lastViewedAt DateTime?
+  viewCount    Int       @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Every check-in attempt, accepted or not. Backs the rate limit (an in-memory
+/// counter is useless on serverless, where each request may hit a fresh
+/// instance) and doubles as the audit trail a university will ask for when a
+/// student disputes an attendance record.
+model CheckinAttempt {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String?
+  ip        String?
+  /// Why it was rejected, or "ok". Kept short and non-personal.
+  result    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, userId, createdAt])
+  @@index([ip, createdAt])
+  @@index([createdAt])
 }

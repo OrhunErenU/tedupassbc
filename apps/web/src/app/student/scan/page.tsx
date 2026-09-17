@@ -45,15 +45,24 @@ export default function ScanPage() {
     if (status.kind === "scanning") return;
     setStatus({ kind: "scanning" });
     try {
-      const data = JSON.parse(value) as { e: string; s: string };
+      // v2 QR carries a rotating HMAC code; the old format carried the raw
+      // secret and is forwarded as-is so the server can explain why it failed.
+      const data = JSON.parse(value) as { v?: number; e: string; c?: string; s?: string };
+      if (!data?.e) {
+        setStatus({ kind: "error", message: "Bu bir TEDU Pass check-in QR'ı değil." });
+        return;
+      }
       const res = await fetch("/api/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: data.e, qrSecret: data.s })
+        body: JSON.stringify({ eventId: data.e, code: data.c, qrSecret: data.s })
       });
       const json = await res.json();
-      if (!res.ok) setStatus({ kind: "error", message: json.error ?? "Check-in başarısız" });
-      else setStatus({ kind: "success", title: json.eventTitle ?? "Etkinlik" });
+      if (!res.ok) {
+        setStatus({ kind: "error", message: json.message ?? json.error ?? "Check-in başarısız" });
+      } else {
+        setStatus({ kind: "success", title: json.eventTitle ?? "Etkinlik" });
+      }
     } catch {
       setStatus({ kind: "error", message: "QR okunamadı" });
     }
@@ -67,7 +76,7 @@ export default function ScanPage() {
   const scannerKey = deviceId || facingMode;
 
   return (
-    <DashboardShell role="Öğrenci" title="QR Tara" description="Etkinlikteki check-in QR'ını tara — rozet daha sonra cüzdanına düşer.">
+    <DashboardShell role="Öğrenci" title="QR Tara" description="Etkinlik ekranındaki check-in QR'ını tara — rozet daha sonra cüzdanına düşer.">
       <Card className="max-w-xl">
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
@@ -126,11 +135,11 @@ export default function ScanPage() {
                 <span className="text-sm text-muted-foreground">{status.title}</span>
               </div>
             ) : status.kind === "error" ? (
-              <Badge variant="warning">Hata: {status.message}</Badge>
+              <p className="text-sm text-destructive">{status.message}</p>
             ) : status.kind === "scanning" ? (
               <Badge variant="outline">Doğrulanıyor...</Badge>
             ) : (
-              <span className="text-sm text-muted-foreground">Kodu kameraya tut.</span>
+              <span className="text-sm text-muted-foreground">Kodu kameraya tut. QR 30 saniyede bir yenilenir; ekrandaki güncel kodu taramalısın.</span>
             )}
           </div>
           {status.kind !== "idle" ? (

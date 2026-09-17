@@ -18,7 +18,10 @@ const config: HardhatUserConfig = {
     }
   },
   networks: {
-    hardhat: {},
+    // Same chain id as Base Sepolia so the web app (which is pinned to that
+    // chain) can talk to a local node unmodified during development and tests.
+    hardhat: { chainId: 84532 },
+    localhost: { url: "http://127.0.0.1:8545", chainId: 84532 },
     baseSepolia: {
       url: RPC_URL,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],

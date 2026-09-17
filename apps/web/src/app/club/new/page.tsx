@@ -26,9 +26,14 @@ export default function NewClubPage() {
         name: String(f.get("name") ?? ""),
         description: String(f.get("description") ?? "") || undefined
       });
-      router.push(`/club/${res.id}`);
-    } catch (err: any) {
-      setError(err?.message ?? "Hata");
+      if (!res.ok) {
+        setError(res.error);
+        setBusy(false);
+        return;
+      }
+      router.push(`/club/${res.data.id}`);
+    } catch {
+      setError("Kulüp oluşturulamadı.");
       setBusy(false);
     }
   }

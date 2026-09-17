@@ -16,11 +16,18 @@ contract TEDUPassBadge is ERC721URIStorage, Ownable, IERC5192 {
     /// @dev External system identifier (e.g. Prisma Badge id) → tokenId
     mapping(bytes32 => uint256) public badgeRefToToken;
 
+    /// @dev tokenId → keccak256 of the canonical metadata document issued with
+    ///      this badge. tokenURI can point anywhere (our domain, IPFS, a future
+    ///      host); this hash is what makes the metadata tamper-evident, so a
+    ///      verifier can prove the document it fetched is the one that was issued.
+    mapping(uint256 => bytes32) public badgeContentHash;
+
     event BadgeMinted(
         uint256 indexed tokenId,
         address indexed to,
         bytes32 indexed badgeRef,
-        string tokenURI
+        string tokenURI,
+        bytes32 contentHash
     );
 
     error TransfersDisabled();
@@ -33,7 +40,8 @@ contract TEDUPassBadge is ERC721URIStorage, Ownable, IERC5192 {
 
     /// @notice Mint a soulbound badge to `to` with metadata `uri`.
     /// @param badgeRef stable identifier from the off-chain system (used to prevent double-mints)
-    function mint(address to, string calldata uri, bytes32 badgeRef)
+    /// @param contentHash keccak256 of the canonical metadata document
+    function mint(address to, string calldata uri, bytes32 badgeRef, bytes32 contentHash)
         external
         onlyOwner
         returns (uint256 tokenId)
@@ -43,18 +51,23 @@ contract TEDUPassBadge is ERC721URIStorage, Ownable, IERC5192 {
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
         badgeRefToToken[badgeRef] = tokenId;
+        badgeContentHash[tokenId] = contentHash;
         emit Locked(tokenId);
-        emit BadgeMinted(tokenId, to, badgeRef, uri);
+        emit BadgeMinted(tokenId, to, badgeRef, uri, contentHash);
     }
 
     /// @notice Batch mint for a closed event (gas-efficient).
     function batchMint(
         address[] calldata recipients,
         string[] calldata uris,
-        bytes32[] calldata badgeRefs
+        bytes32[] calldata badgeRefs,
+        bytes32[] calldata contentHashes
     ) external onlyOwner returns (uint256[] memory tokenIds) {
         uint256 n = recipients.length;
-        require(n == uris.length && n == badgeRefs.length, "len");
+        require(
+            n == uris.length && n == badgeRefs.length && n == contentHashes.length,
+            "len"
+        );
         tokenIds = new uint256[](n);
         for (uint256 i = 0; i < n; i++) {
             if (badgeRefToToken[badgeRefs[i]] != 0) revert BadgeRefAlreadyMinted();
@@ -62,9 +75,10 @@ contract TEDUPassBadge is ERC721URIStorage, Ownable, IERC5192 {
             _safeMint(recipients[i], tokenId);
             _setTokenURI(tokenId, uris[i]);
             badgeRefToToken[badgeRefs[i]] = tokenId;
+            badgeContentHash[tokenId] = contentHashes[i];
             tokenIds[i] = tokenId;
             emit Locked(tokenId);
-            emit BadgeMinted(tokenId, recipients[i], badgeRefs[i], uris[i]);
+            emit BadgeMinted(tokenId, recipients[i], badgeRefs[i], uris[i], contentHashes[i]);
         }
     }
 
